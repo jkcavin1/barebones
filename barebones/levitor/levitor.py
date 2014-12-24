@@ -17,9 +17,14 @@ class Levitor(DirectObject.DirectObject):
         #DirectObject().__init__(self)
         super(Levitor, self).__init__()
         self.notify = DirectNotify().newCategory('levitorErr')
-        self.panditorNP = panditNP
+        self.barebonesNP = panditNP
         self.levitorNP = levitNP
         self.grabber = Grabber(levitNP)
+
+        self.axis = loader.loadModel("zup-axis")
+        self.axis.reparentTo(self.levitorNP)
+        self.axis.setScale(1.0)
+        self.axis.setPos(0.0)
 
 
 

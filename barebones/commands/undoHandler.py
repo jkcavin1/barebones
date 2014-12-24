@@ -1,6 +1,5 @@
 __author__ = 'Lab Hatter'
 
-from direct.showbase.DirectObject import DirectObject
 from direct.showbase.ShowBase import messenger
 from collections import deque
 
@@ -22,7 +21,8 @@ class UndoHandler(object):
         # Redo() moves the pointer forward one step and then calls Execute() on the newly pointed to item.
         # As is usual, the redo side of the list is cleared whenever any new actions are recorded.
 
-        # TODO: handle this in push()
+        # TODO: handle observers in record(), if workable.
+        # td If smaller operations need observed, this will be a pure Undo/Redo and observers will be handled elsewhere
         self._observers = []
         ##########################################################
         # deque append and pop from the right side by default
@@ -68,30 +68,20 @@ class UndoHandler(object):
         self._undoQueue.append((targetObject, commandObj))
         self._redoQueue.clear()
 
-        # REMOVE debugging purposes
-        # for i in self._undoQueue:
-        #     print i
-
 
     def _undo(self):
         try:
             # pops right
             com = self._undoQueue.pop()
-        except IndexError, e:
-            # # REMOVE after fully implemented
-            # print '(FYI) Undo while undo queue is empty'
-            # print e
-            pass  # RETAIN THIS
+        except IndexError:
+            pass
 
         try:
             com[self._commandInd].undo()
             # appends right
             self._redoQueue.append(com)
-        except UnboundLocalError, e:
-            # # REMOVE after fully implemented
-            # print '(FYI) this should only happen with empty _undoQueue which should have also printed a message'
-            # print e
-            pass  # RETAIN THIS
+        except UnboundLocalError:
+            pass
 
 
     def _redo(self):
@@ -99,21 +89,15 @@ class UndoHandler(object):
             # pops right
             com = self._redoQueue.pop()
 
-        except IndexError, e:
-            # # REMOVE after fully implemented
-            # print '(FYI) Redo while redo queue is empty'
-            # print e
-            pass  # RETAIN THIS
+        except IndexError:
+            pass
 
         try:
             com[self._commandInd].execute()
             # appends right
             self._undoQueue.append(com)
-        except UnboundLocalError, e:
-            # # REMOVE after fully implemented
-            # print '(FYI) this should only happen with empty _redoQueue which should have also printed a message'
-            # print e
-            pass  # RETAIN THIS
+        except UnboundLocalError:
+            pass
 
 
 if __name__ == '__main__':

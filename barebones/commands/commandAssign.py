@@ -106,7 +106,7 @@ if __name__ == '__main__':
             self.act.setScale(.05)
             self.command = UndoCommandOneFuncCall([self.act.getPos()],
                                                   self.act.setPos, render, Point3(-60.0, -60.0, -60.0))
-            base.disableMouse()
+            base.disableCamera()
             camera.setPos( 60.0, 60.0, 60.0)
             camera.lookAt(self.act)
             from direct.task.Task import Task

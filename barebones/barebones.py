@@ -11,10 +11,8 @@ __author__ = 'Lab Hatter'
 # # sys.path.append(absPath + '/levitor')
 # # sys.path.append(absPath + '/utilities')
 
-# from panda3d.core import NodePath, PandaNode, GeomNode, BitMask32
-# from direct.showbase.ShowBase import ShowBase
+
 from panda3d.core import PandaNode, NodePath
-from direct.showbase.DirectObject import DirectObject
 from direct.directnotify.DirectNotify import DirectNotify
 import BBVariables as BBGlobalVars
 from levitor.levitor import Levitor
@@ -22,10 +20,9 @@ from TwoDeeGui import TwoDeeGui
 
 
 
-class BareBones(DirectObject):
+class BareBones(object):
     def __init__(self):
-        DirectObject.__init__(self)
-        BBGlobalVars.initialise(self, render)  # set render as current coordinate system (NOT CURRENTLY IMPLEMENTED)
+        BBGlobalVars.initialise(self, render)  # set render as current coordinate system (NOT CURRENTLY USED)
         #super(DirectObject, self).__init__() # I'd like to do this init
         self.notify = DirectNotify()
         self.notify.newCategory('bareBonesErr')

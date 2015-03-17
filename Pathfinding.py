@@ -110,7 +110,8 @@ class Pathfinding(BareBonesEditor):
         wireNP.setRenderMode(RenderModeAttrib.MWireframe, .5, 0)
         mapNP.instanceTo(wireNP)
 
-        aStar = TriangulationAStar(aLst.adjLst, Point3(-11, -11, 0), Point3(11, 11, 0))
+        # aStar = TriangulationAStar(aLst.adjLst, Point3(-11, -11, 0), Point3(11, 11, 0))
+        aStar = TriangulationAStar(aLst.adjLst, aLst.adjLst[23].getCenter(), aLst.adjLst[4].getCenter())
         path = aStar.AStar()
         # lst = [7, 18, 19, 20]
         # for i in path:  #range(0, len(path)):

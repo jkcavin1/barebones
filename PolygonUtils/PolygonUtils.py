@@ -102,8 +102,8 @@ def getCenterOfPointsXY(points):
         x = x + i.x
         y = y + i.y
         z = z + i.z
-
-    return Vec3(x/n, y/n, z/n)
+    # print x/n, y/n, z/n, n, points
+    return Point3(x/n, y/n, z/n)
 
 
 def getTrueAngleXYBetweenPoints(ptA, ptB):

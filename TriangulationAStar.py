@@ -3,7 +3,7 @@ __author__ = 'Lab Hatter'
 
 from Queue import PriorityQueue
 from panda3d.core import Vec3, Point3
-from PolygonUtils.PolygonUtils import getDistance, getAngleXYVecs
+from PolygonUtils.PolygonUtils import getDistance, getAngleXYVecs, getCenterOfPointsXY
 from PolygonUtils.AdjacencyList import AdjLstElement, copyAdjLstElement
 
 
@@ -145,13 +145,60 @@ class TriangulationAStar(object):
         return path
 
     def funnel(self, channel):
-
-
         # pick the starting point and the starting left and right
         start = channel[0]
         second = channel[1]
-        funler = self.makeFunVecs(start, second)
-        self.funnelIter(0, channel, funler)
+        funnler = self.makeFunVecs(start, second)
+        apexTriangles = []
+        pathPts = [funnler.start]
+        i = 0
+        while channel[i] != self.goal:
+            # [leftOrRightFailed, i, funVecs]
+            pack = self.funnelIter(i, channel, funnler)
+
+            print "############## after iter #####################"
+            if channel[i] == self.goal:
+                break
+            i = pack[1]  # get the updated index
+            apexTriangles.append(channel[i])  # record this as a triangle where we turned a corner
+            funnler = pack[2]
+            if channel[i] != self.goal:
+                if pack[0] == 'left':  # if it's right make left the new apex
+                    print "rPt", funnler.rPt
+                    pathPts.append(funnler.rPt)  # record the next path point
+                    funnler.start = funnler.rPt
+                    pts = channel[i].getSharedPoints(channel[i + 1])
+                    print "Shared pts", pts
+                    # pick the not equal to left point on the shared edge
+                    for k in channel[i + 1].tri:
+                        if k not in pts:
+                            funnler.updateRight(k)
+                    # if funnler.lPt == pts[0]:
+                    #     funnler.updateRight(pts[1])
+                    # else:
+                    #     funnler.updateRight(pts[0])
+                elif pack[0] == 'right':
+                    print "lPt", funnler.lPt
+                    pathPts.append(funnler.lPt)  # record the next path point
+                    funnler.start = funnler.lPt
+                    pts = channel[i].getSharedPoints(channel[i + 1])
+                    print "Shared pts", pts
+                    for k in channel[i + 1].tri:
+                        if k not in pts:
+                            funnler.updateLeft(k)
+
+                    # if funnler.rPt == pts[0]:
+                    #     funnler.updateLeft(pts[1])
+                    # else:
+                    #     funnler.updateLeft(pts[0])
+                else:
+                    print "ERRROR??? funnel() defaulted left or right = ", pack[0]
+                    break
+
+
+            print "######################## new funnler", funnler
+
+        print "path", pathPts
 
         return channel
 
@@ -160,76 +207,78 @@ class TriangulationAStar(object):
         # http://digestingduck.blogspot.com/2010/03/simple-stupid-funnel-algorithm.html
         # http://gamedev.stackexchange.com/questions/68302/how-does-the-simple-stupid-funnel-algorithm-work
 
-        lstCross = funVecs.getCross()
         i = startInd + 1  # need to compare points in the nex triangle to decide which  gets updated
-        needBreak = False
-        while not needBreak and i < len(channel) and not funVecs.needNewApex():
+        leftOrRightFailed = "none"
+        while leftOrRightFailed == "none" and i < len(channel):
+            neitherUpdated = True
             shrd = channel[i].getSharedPoints(channel[i - 1])
             nxtTri = channel[i]
-            if funVecs.rPt in nxtTri.tri and nxtTri.isConstrained(funVecs.rPt):
-
+            print "nxtTri", nxtTri
+            if nxtTri.isConstrained(funVecs.rPt):  # comments are where the left is handled (below the right's code)
                 for p in nxtTri.tri:
                     if p not in shrd:
-                        print "r check"
-                        #if funVecs.area(funVecs.rPt, p)
+                        print "r check p =", p
                         newVec = Vec3(p - funVecs.start)
-                        ang = getAngleXYVecs(newVec, funVecs.right)
-                        # print "angle", ang
-                        # print " vecs ", funVecs.right, newVec, newVec.angleDeg(funVecs.right)
-                        # if funVecs.right.cross(newVec).z >= 0:# or\
-                        if funVecs.left.cross(newVec).z <= 0:
-                            # ang < 2:
-                            print "right cross new", funVecs.right.cross(newVec)
+                        if funVecs.right.cross(newVec).z >= 0:  #### 1
                             # if funVecs.left.cross(newVec).z <= 0:
-                            if funVecs.right.cross(newVec).z >= 0:
+                            print "right good"
+                            if funVecs.left.cross(newVec).z <= 0:  #### 2 crossed over left
+                                # if funVecs.right.cross(newVec).z >= 0:
+                                neitherUpdated = False
                                 funVecs.updateRight(p)
-                                print channel[i - 1]
+                                # print channel[i - 1]
                                 print funVecs, " RR  cross  ", funVecs.getCross(), "    i ", i
                             else:  # we've crossed the other side and need a new apex (start)
-                                print "fail cross R", funVecs.right.cross(newVec), " L ", funVecs.left.cross(newVec).z
-                                needBreak = True
+                                print "fail crossed L R=", funVecs.right.cross(newVec), " L ", funVecs.left.cross(newVec).z
+                                leftOrRightFailed = "right"  # if we've crossed the other side STOP
                                 break
 
-            if needBreak:
-                print "break r"
+            if leftOrRightFailed != "none":  # if we've crossed the other side STOP
+                print "break r i=", i
                 break
 
-            if funVecs.lPt in nxtTri.tri and nxtTri.isConstrained(funVecs.lPt):
+            if nxtTri.isConstrained(funVecs.lPt):
                 for p in nxtTri.tri:
                     if p not in shrd:
-                        print "l check"
+                        print "l check p =", p
                         newVec = Vec3(p - funVecs.start)
-                        ang = getAngleXYVecs(funVecs.left, newVec)
-                        # print "angle", ang
-                        # print " vecs ", funVecs.left, newVec
-                        # if funVecs.left.cross(newVec).z <= 0:# or\
-                        if funVecs.right.cross(newVec).z >= 0:
-
-                                # ang < 2:
-                            # if funVecs.right.cross(newVec).z >= 0:
-                            if funVecs.left.cross(newVec).z <= 0:
-                                # if the next left makes a wider funnel hold this point
-                                print "old cross ", lstCross, "left cross new", funVecs.left.cross(newVec)
+                        if funVecs.left.cross(newVec).z <= 0:  # 1 don't update if the next vert is outside the funnel
+                            print "left good"
+                            if funVecs.right.cross(newVec).z >= 0:  # 2
+                                # if funVecs.left.cross(newVec).z <= 0:  # if the next left makes is outside, get new apex
+                                neitherUpdated = False
                                 funVecs.updateLeft(p)
-                                print channel[i - 1]
+                                # print channel[i - 1]
                                 print funVecs, " LL  cross ", funVecs.getCross(), "    i ", i
-                            else:# if we've crossed the right we need a new point for start (apex)
+                            else:  # if we've crossed the right we need a new point for start (apex)
                                 print "fail cross R", funVecs.right.cross(newVec), " L ", funVecs.left.cross(newVec).z
-                                needBreak = True
+                                leftOrRightFailed = "left"  # if we've crossed the other side STOP
                                 break
 
-            if needBreak:
+
+            if leftOrRightFailed != "none":  # if we've crossed the other side STOP
                 print "break l i = ", i
                 break
 
-            print i, needBreak
-            lstCross = funVecs.getCross()
+            if neitherUpdated:  # if we didn't update one side or the other STOP
+                print "neither updated"
+                lookAheadTri = channel[i + 1]
+                edgeOut = nxtTri.getSharedPoints(lookAheadTri)
+                # if neither updated, the point that's not in the next triangle
+                # needs to become the next apex (funVec.start).
+                # we change the funVec in funnel()
+                if funVecs.rPt not in edgeOut:
+                    leftOrRightFailed = "left"
+                else:
+                    leftOrRightFailed = "right"
+                break
+
+            print "i end", i
             i += 1
 
-        print "end Iter\n"
-        print "i", i, len(channel), channel[i], "\nfunVecs ", funVecs
-        return [i, funVecs]
-
+        print "end Iter leftOrRight", leftOrRightFailed + "\n"
+        print "i", i, "len", len(channel), "chan i", channel[i], "\nfunVecs ", funVecs
+        return [leftOrRightFailed, i, funVecs]
 
     def makeFunVecs(self, start, second):
         shared = start.getSharedPoints(second)
@@ -241,7 +290,12 @@ class TriangulationAStar(object):
         right = Vec3(shared[1] - startPt)
         rpt = shared[1]
         # if these are on the wrong side switch them
-        if left.cross(right) <= 0.0:
+        # print "start", start  #, " mid - start ", getCenterOfPointsXY(shared)
+        midP = getCenterOfPointsXY(shared)
+        mid = getCenterOfPointsXY(shared) - startPt
+        print "mid", mid, midP, " left - mid ", lpt-mid, shared, left
+        if (lpt - mid).y >= 0.0:  #(left - mid).y >= 0.0:
+            print "swap"
             tmp = left
             left = right
             right = tmp
@@ -249,8 +303,10 @@ class TriangulationAStar(object):
             tmp = lpt
             lpt = rpt
             rpt = tmp
-        print "make funner ", FunVecs(startPt, left, lpt, right, rpt)
-        return FunVecs(startPt, left, lpt, right, rpt)
+        funVec = FunVecs(startPt, left, lpt, right, rpt)
+        print "make funner ", funVec
+        print "  continued", funVec.start, funVec.left, funVec.right
+        return funVec
 
     def isIn(self, ind, lst):
         for p in lst:

@@ -4,7 +4,7 @@ __author__ = 'Lab Hatter'
 from panda3d.core import Point3
 from math import sqrt, pow
 from PolygonUtils import getDistance
-from Triangle import Triangle, getSharedVerts, getCenterOfPointsXY
+from Triangle import Triangle, getEdgeStr, getCenterOfPoint3s
 
 
 def copyAdjLstElement(adjLstEl):
@@ -64,12 +64,17 @@ class AdjLstElement(Triangle):
 
     def getSharedPoints(self, other):
         pts = []
+        found = False
         for pt in self.tri:
             if pt in other.tri:
+                found = True
                 pts.append(pt)
+        if not found:
+            raise Exception("Wat?? %i\n%i", self.selfInd, other.selfInd)
         return pts
 
     def isConstrained(self, pt):
+        """Returns true if the point is on an edge with no neighbour"""
         if pt not in self.tri:
             raise Exception("isConstrained: Point must be in this triangle." +
                             self.__repr__() + " pt " + str(pt))
@@ -86,6 +91,15 @@ class AdjLstElement(Triangle):
         else:
             #print "false: pt", pt, "self", self, "  naybs ", self.n12, self.n23, self.n13
             return False
+
+    def getOppositePoints(self, pt):
+        pts = []
+        for p in self.tri:
+            if p != pt:
+                pts.append(p)
+        return pts
+
+
     def __eq__(self, other):
         return self.selfInd == other.selfInd
 
@@ -125,7 +139,7 @@ class AdjacencyList(object):
         for j in range(0, len(self.adjLst)):
             for k in range(0, len(self.adjLst)):
                 if j != k:
-                    nayb = getSharedVerts(self.adjLst[j], self.adjLst[k])
+                    nayb = getEdgeStr(self.adjLst[j], self.adjLst[k])
                     if nayb == '12':
                         self.adjLst[j].n12 = k
                     if nayb == '23':

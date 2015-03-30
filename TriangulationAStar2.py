@@ -146,7 +146,6 @@ class TriangulationAStar(object):
         for ii in range(0, 3):
             if end.tri[ii] not in end.getSharedPoints(nextN):
                 end.tri[ii] = end.getCenter()  # set the center as the goal point
-                goalPt = end.tri[ii]  # used to put the goal at the end of both right and left point lists
         end.par = nextN.selfInd
         channel = [end]
 
@@ -169,10 +168,7 @@ class TriangulationAStar(object):
         channel = list(reversed(channel))
         shrdPts = channel[0].getSharedPoints(channel[1])
 
-        print "\n"
-        for c in channel:
-            print c
-        print "\n"
+        print channel[0], "\n", channel[1]
         ################### PUT THIS IN A FUNCTION
         # get the starting point so we can figure out which shared point goes on the Right and which the left
         for p in range(0, 3):
@@ -190,25 +186,20 @@ class TriangulationAStar(object):
         rightPts = [r]
         # make the list of left and right points
         for i in range(0, len(channel) - 1):
+            print "triangle", channel[i]
             side, vecToNxt, nxtPt = self.getNextVec(i, channel)
             if side == "right":
                 rightPts.append(nxtPt)
             else:
                 leftPts.append(nxtPt)
-
-        if rightPts[len(rightPts) - 1] != goalPt:
-            rightPts.append(goalPt)
-        if leftPts[len(leftPts) - 1] != goalPt:
-            leftPts.append(goalPt)
-
         print "\nLEFT", leftPts
         print "RIGHT", rightPts, "\n"
         ################################# PUT THE ABOVE IN A FUNCTION
-        path = self.newFunnel2(stPt, goalPt, leftPts, rightPts)
+        path = self.newFunnel2(stPt, leftPts, rightPts)
         # return channel
         return path
 
-    def newFunnel2(self, startPt, goalPt, leftPts, rightPts):
+    def newFunnel2(self, startPt, leftPts, rightPts):
         """creates a true path out of the given funnel and returns the points and length"""
         def isDistSmall(a, b):
             tol = 0.0001*0.0001
@@ -225,8 +216,7 @@ class TriangulationAStar(object):
         print "LEFT", leftPts
         print "RIGHT", rightPts
         print funnVec
-        lPoint = rPoint = None
-        while  lInd < len(leftPts) - 1 or rInd < len(rightPts) - 1:
+        while lInd < len(leftPts) - 1 and rInd < len(rightPts) - 1:
             rPoint = rightPts[rInd]
             lPoint = leftPts[lInd]
             print "\n\nrPoint", rPoint, "  lPoint", lPoint
@@ -245,7 +235,6 @@ class TriangulationAStar(object):
                     pathPts.append(funnVec.lPt)
                     funnVec.start = funnVec.lPt
                     funnVec.updateLeft(leftPts[lInd])
-                    lPoint = leftPts[lInd]
                     lInd += 1
 
             print "funVecs1", funnVec

@@ -18,7 +18,7 @@ def getDistance2d(pt1, pt2):
 
 def makeCcw(verts):
     print "makeCcw only works on convex hulls"
-    cntr = getCenterOfPointsXY(verts)
+    cntr = getCenterOfPoint3s(verts)
     if cntr == Vec3(0, 0, 0):
         cntr += .01
 
@@ -93,7 +93,7 @@ def makeTriMesh( verts, holeVerts=[[]]):
     return tuple((node, trilator))
 
 
-def getCenterOfPointsXY(points):
+def getCenterOfPoint3s(points):
     n = len(points)
     x = 0
     y = 0
@@ -102,7 +102,6 @@ def getCenterOfPointsXY(points):
         x = x + i.x
         y = y + i.y
         z = z + i.z
-    # print x/n, y/n, z/n, n, points
     return Point3(x/n, y/n, z/n)
 
 
@@ -142,4 +141,15 @@ def getAngleXYVecs(vecA, vecB):
     #     ang = 360 - ang
 
     return ang
+
+def getLeftPt(pt, ptPair):
+    """Takes the center of two points then returns the left point as viewed from a third point (1st parameter)."""
+    midPt = getCenterOfPoint3s(ptPair)
+    vecToMid = midPt - pt
+    vecToPt1 = ptPair[0] - pt
+    # the point on the left has a negative z in its cross product with the middle point
+    if vecToPt1.cross(vecToMid).z < 0:
+        return ptPair[0]
+    else:
+        return ptPair[1]
 

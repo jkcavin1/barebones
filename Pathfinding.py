@@ -9,7 +9,7 @@ from panda3d.core import RenderModeAttrib
 from BareBonesEditor import BareBonesEditor
 import math
 from PolygonUtils.AdjacencyList import AdjacencyList
-from PolygonUtils.PolygonUtils import getCenterOfPointsXY, makeTriMesh
+from PolygonUtils.PolygonUtils import getCenterOfPoint3s, makeTriMesh
 from TriangulationAStar import TriangulationAStar
 from CcwShapes import HorseShoeCentered, SquareOffCenter, SquareMap10x10, TheirMap
 
@@ -18,7 +18,7 @@ def drawInds(adjLst):
     from direct.gui.OnscreenText import OnscreenText
     indNP = render.attachNewNode('indsgroup')
     for i in range(0, len(adjLst)):
-        center = getCenterOfPointsXY(adjLst[i].tri)
+        center = getCenterOfPoint3s(adjLst[i].tri)
         dummy = indNP.attachNewNode(str(i))
         txt = OnscreenText(text=str(i), pos=center, scale=1)
         txt.reparentTo(dummy)
@@ -36,7 +36,7 @@ def drawInds(adjLst):
 #
 #     prim = GeomLines(Geom.UHStatic)
 #     for i in range(0, len(adjLst)):
-#         center = getCenterOfPointsXY(adjLst[i].tri)
+#         center = getCenterOfPoint3s(adjLst[i].tri)
 #         vertex.addData3f(center)  # adjLst[i].pt1, i.y, i.z)
 #         normal.addData3f(Point3(0, 0, 1))
 #         color.addData4f(256/2, 0, 0, 1)
@@ -111,7 +111,7 @@ class Pathfinding(BareBonesEditor):
         mapNP.instanceTo(wireNP)
 
         # aStar = TriangulationAStar(aLst.adjLst, Point3(-11, -11, 0), Point3(11, 11, 0))
-        aStar = TriangulationAStar(aLst.adjLst, aLst.adjLst[23].getCenter(), aLst.adjLst[4].getCenter())
+        aStar = TriangulationAStar(aLst.adjLst, aLst.adjLst[23].getCenter(), aLst.adjLst[18].getCenter())
         path = aStar.AStar()
         # lst = [7, 18, 19, 20]
         # for i in path:  #range(0, len(path)):
@@ -127,21 +127,5 @@ class Pathfinding(BareBonesEditor):
 
 
 if __name__ == '__main__':
-    # import sys
-    # sys.stdout = None
-
-    # a way to redirect print ##############################
-    # import sys
-    # import os
-    #
-    # def thwErr(stuff):
-    #     exceptions.StandardError()
-    # sys.stdout = open(  os.devnull, "w")
-    #
-    #
-    # thwErr('')
-    #
-    # sys.stdout = sys.__stdout__
-    ######################################################
     app = Pathfinding()
     app.run()

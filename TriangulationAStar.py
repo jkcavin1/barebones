@@ -226,7 +226,7 @@ class TriangulationAStar(object):
         print "RIGHT", rightPts
         print funnVec
         lPoint = rPoint = None
-        while  lInd < len(leftPts) - 1 or rInd < len(rightPts) - 1:
+        while lPoint != goalPt and rPoint != goalPt:  # lInd < len(leftPts) - 1 or rInd < len(rightPts) - 1:
             rPoint = rightPts[rInd]
             lPoint = leftPts[lInd]
             print "\n\nrPoint", rPoint, "  lPoint", lPoint
@@ -265,12 +265,48 @@ class TriangulationAStar(object):
                     funnVec.start = funnVec.rPt
                     funnVec.updateRight(rightPts[rInd])
                     rInd += 1
+
+
             print "funVecs2", funnVec
             print "PATH", pathPts
 
+        if rInd + 1 < len(rightPts):
+            rInd += 1
+        if lInd + 1 < len(leftPts):
+            lInd += 1
+        print "\n\n\nlast stab"
+        if funnVec.right.cross(rPoint - funnVec.start).z >= 0:
+            print " right good"
+            # update if we didn't cross the left. If we did cross the left, restart the funnel
+            if isDistSmall(funnVec.rPt, rPoint) or funnVec.left.cross(rPoint - funnVec.start).z <= 0:
+                print " right still good", rPoint
+                return pathPts
+            else:  # we've crossed the left side. Restart the funnel
+                # the left side is a corner
+                print "right not good"
+                pathPts.append(funnVec.lPt)
+                pathPts.append(goalPt)
+                return pathPts
+        else:
+            pathPts.append(funnVec.rPt)
+            pathPts.append(goalPt)
 
+        print "end funVecs1", funnVec
 
+        # if funnVec.left.cross(lPoint - funnVec.start).z <= 0:
+        #     print " left good"
+        #     # update if we didn't cross the right. If we did cross the right, restart the funnel
+        #     if isDistSmall(funnVec.lPt, lPoint) or funnVec.right.cross(lPoint - funnVec.start).z >= 0:
+        #         print " left still good", lPoint
+        #         pass
+        #     else:  # we've crossed the right side. Restart the funnel
+        #         # the right side is a corner
+        #         print " left not good"
+        #         pathPts.append(funnVec.rPt)
+        #
+        # print "end funVecs2", funnVec
 
+        print "PATH", pathPts
 
 
     def funnelNew(self, channel):
@@ -394,14 +430,14 @@ class TriangulationAStar(object):
             vecToNxt = channel[i + 1].tri[1] - channel[i].getCenter()
 
         if vecToNxt.cross(vecToMid).z >= 0:
-            print "right", channel[i].selfInd, vecToMid, vecToNxt, "next",\
-                channel[i].getCenter().x + vecToNxt.x, channel[i].getCenter().y + vecToNxt.y
+            # print "right", channel[i].selfInd, vecToMid, vecToNxt, "next",\
+            #     channel[i].getCenter().x + vecToNxt.x, channel[i].getCenter().y + vecToNxt.y
             return ["right", vecToNxt, Point3( channel[i].getCenter().x + vecToNxt.x,
                                               channel[i].getCenter().y + vecToNxt.y,
                                               channel[i].getCenter().z + vecToNxt.z)]
         else:
-            print "left", channel[i].selfInd, vecToMid, vecToNxt, "next",\
-                channel[i].getCenter().x + vecToNxt.x, channel[i].getCenter().y + vecToNxt.y
+            # print "left", channel[i].selfInd, vecToMid, vecToNxt, "next",\
+            #     channel[i].getCenter().x + vecToNxt.x, channel[i].getCenter().y + vecToNxt.y
             return ["left", vecToNxt, Point3( channel[i].getCenter().x + vecToNxt.x,
                                               channel[i].getCenter().y + vecToNxt.y,
                                               channel[i].getCenter().z + vecToNxt.z)]

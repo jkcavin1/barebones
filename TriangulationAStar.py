@@ -33,9 +33,9 @@ class FunVecs(object):
         right = Vec3(proposedRight - start)
         rpt = proposedRight
         # if these are on the wrong side switch them
-        # print "start", start  #, " mid - start ", getCenterOfPoint3s(shared)
+        # print "startPt", startPt  #, " mid - startPt ", getCenterOfPoint3s(shared)
         mid = getCenterOfPoint3s([proposedLeft, proposedRight]) - start
-        # print "mid", mid, midP, " left - mid ", lpt-mid, shared, left
+        # print "mid", mid, midP, " leftVec - mid ", lpt-mid, shared, leftVec
         if left.cross(mid).z > 0.0:
             print "swap"
             tmp = left
@@ -66,11 +66,11 @@ class FunVecs(object):
         return ax * (by - cy) + bx * (cy - ay) + cx * (ay - by)
 
     def __repr__(self):
-        return "< start: " + str(self.start) +\
+        return "< startPt: " + str(self.start) +\
                ", leftPt: " + str(self.lPt) +\
                ", rightPt: " + str(self.rPt) #+\
-               #", left: " + str(self.left) +\
-               #", right: " + str(self.right) +\
+               #", leftVec: " + str(self.leftVec) +\
+               #", rightVec: " + str(self.rightVec) +\
                #">"
 
 
@@ -132,7 +132,7 @@ class TriangulationAStar(object):
     def makeChannel(self, end, nextN, start=None):
         """Takes the end of a channel of triangles and creates lists of Right and Left points that lead through the channel"""
         if start is None:
-            start = self.start  # TODO: handle and arbitrary point as the start
+            start = self.start  # TODO: handle and arbitrary point as the startPt
         for nayb in end.getNaybs():
             if nayb in nextN.getNaybs():
                 p = end.getSharedPoints(nextN)
@@ -146,12 +146,12 @@ class TriangulationAStar(object):
         for ii in range(0, 3):
             if end.tri[ii] not in end.getSharedPoints(nextN):
                 end.tri[ii] = end.getCenter()  # set the center as the goal point
-                goalPt = end.tri[ii]  # used to put the goal at the end of both right and left point lists
+                goalPt = end.tri[ii]  # used to put the goal at the end of both rightVec and leftVec point lists
         end.par = nextN.selfInd
         channel = [end]
 
         curr = nextN
-        # TODO: create special triangles for the goal and start
+        # TODO: create special triangles for the goal and startPt
         # make a channel out of the list of adjacency indexes
         while curr != start:
             # copy the adj triangles out so we can strip references to non-channel triangle without messing of the map
@@ -161,8 +161,8 @@ class TriangulationAStar(object):
             parKey = str(self.closed[currKey].par)
             curr = self.closed[parKey]
 
-        # cpy is a copy of the start
-        # make the special case triangle for the start
+        # cpy is a copy of the startPt
+        # make the special case triangle for the startPt
         cpyInd = str(self.start.selfInd)
         cpy = copyAdjLstElement(self.closed[cpyInd])
         channel.append(cpy)
@@ -174,13 +174,13 @@ class TriangulationAStar(object):
             print c
         print "\n"
         ################### PUT THIS IN A FUNCTION
-        # get the starting point so we can figure out which shared point goes on the Right and which the left
+        # get the starting point so we can figure out which shared point goes on the Right and which the leftVec
         for p in range(0, 3):
             # the point not shared between the first two triangles is the starting point
             if channel[0].tri[p] not in shrdPts:
                 stPt = channel[0].tri[p]
                 l = getLeftPt(stPt, shrdPts)
-                # get the right point
+                # get the rightVec point
                 for z in shrdPts:
                     if z != l:
                         r = z
@@ -188,10 +188,10 @@ class TriangulationAStar(object):
                 break
         leftPts = [l]
         rightPts = [r]
-        # make the list of left and right points
+        # make the list of leftVec and rightVec points
         for i in range(0, len(channel) - 1):
             side, vecToNxt, nxtPt = self.getNextVec(i, channel)
-            if side == "right":
+            if side == "rightVec":
                 rightPts.append(nxtPt)
             else:
                 leftPts.append(nxtPt)
@@ -205,6 +205,7 @@ class TriangulationAStar(object):
         print "RIGHT", rightPts, "\n"
         ################################# PUT THE ABOVE IN A FUNCTION
         path = self.newFunnel2(stPt, goalPt, leftPts, rightPts)
+        print path, "startPt goal", stPt, goalPt
         # return channel
         return path
 
@@ -226,87 +227,146 @@ class TriangulationAStar(object):
         print "RIGHT", rightPts
         print funnVec
         lPoint = rPoint = None
+
         while lPoint != goalPt and rPoint != goalPt:  # lInd < len(leftPts) - 1 or rInd < len(rightPts) - 1:
+            neitherUpdated = True
             rPoint = rightPts[rInd]
             lPoint = leftPts[lInd]
             print "\n\nrPoint", rPoint, "  lPoint", lPoint
-            # hold if the next point on the right is outside the funnel but not crossing the left
+            # hold if the next point on the rightVec is outside the funnel but not crossing the leftVec
             if funnVec.right.cross(rPoint - funnVec.start).z >= 0:
-                print " right good"
-                # update if we didn't cross the left. If we did cross the left, restart the funnel
+                print " rightVec good"
+                # update if we didn't cross the leftVec. If we did cross the leftVec, restart the funnel
                 if isDistSmall(funnVec.rPt, rPoint) or funnVec.left.cross(rPoint - funnVec.start).z <= 0:
-                    print " right still good", rPoint
-                    # the next right is still in the funnel
+                    print " rightVec still good", rPoint
+                    # the next rightVec is still in the funnel
                     funnVec.updateRight(rPoint)
                     rInd += 1
-                else:  # we've crossed the left side. Restart the funnel
-                    # the left side is a corner
-                    print "right not good"
-                    pathPts.append(funnVec.lPt)
-                    funnVec.start = funnVec.lPt
-                    funnVec.updateLeft(leftPts[lInd])
-                    lPoint = leftPts[lInd]
-                    lInd += 1
+                    neitherUpdated = False
+                else:  # we've crossed the leftVec side. Restart the funnel
+                    # the leftVec side is a corner
+                    print "rightVec not good"
+                    # update only if the leftVec side is as tight as it can be
+                    if funnVec.left.cross(lPoint - funnVec.start).z <= 0:
+                        pathPts.append(funnVec.lPt)
+                        funnVec.start = funnVec.lPt
+                        funnVec.updateLeft(lPoint)
+                        lPoint = lPoint
+                        lInd += 1
+                        neitherUpdated = False
 
             print "funVecs1", funnVec
 
             if funnVec.left.cross(lPoint - funnVec.start).z <= 0:
-                print " left good"
-                # update if we didn't cross the right. If we did cross the right, restart the funnel
+                print " leftVec good"
+                # update if we didn't cross the rightVec. If we did cross the rightVec, restart the funnel
                 if isDistSmall(funnVec.lPt, lPoint) or funnVec.right.cross(lPoint - funnVec.start).z >= 0:
-                    print " left still good", lPoint
-                    # the next right is still in the funnel
+                    print " leftVec still good", lPoint
+                    # the next rightVec is still in the funnel
                     funnVec.updateLeft(lPoint)
                     lInd += 1
-                else:  # we've crossed the right side. Restart the funnel
-                    # the right side is a corner
-                    print " left not good"
+                    neitherUpdated = False
+                else:  # we've crossed the rightVec side. Restart the funnel
+                    # the rightVec side is a corner
+                    print " leftVec not good"
+                    # update only if the other side is as tight as it can be
+                    if funnVec.right.cross(rPoint - funnVec.start).z >= 0:
+                        pathPts.append(funnVec.rPt)
+                        funnVec.start = funnVec.rPt
+                        funnVec.updateRight(rightPts[rInd])
+                        rInd += 1
+                        neitherUpdated = False
+            print "funVecs2", funnVec
+            print "PATH", pathPts
+            if neitherUpdated:
+                # process both sides until one crosses the other or the goal is reached
+                leftCrossed = rightCrossed = False
+                for r in range(rInd, len(rightPts)):
+                    rSeekVec = rightPts[r] - funnVec.start
+                    if funnVec.left.cross(rSeekVec).z > 0:
+                        print "r found", rightPts[r]
+                        rightCrossed = True
+                        break
+
+                for l in range(lInd, len(leftPts)):
+                    lSeekVec = leftPts[l] - funnVec.start
+                    if funnVec.right.cross(lSeekVec).z < 0:
+                        print "l found", leftPts[l]
+                        leftCrossed = True
+                        break
+
+
+
+
+                if leftCrossed and rightCrossed:
+                    # take the with either the least difference in indexes (lSeekInd - lInd)
+                    # or the one that traveled the least distance (not sure which one yet)
+                    print "\nRIGHT AND LEFT CROSSED ######################################\n"
+                elif rightCrossed:
+                    # reset the rightVec side to the one that crossed the leftVec sid
+                    print "rightCrossed append", funnVec.lPt
+                    rInd = r
+                    funnVec.updateRight(rightPts[rInd])
+                    pathPts.append(funnVec.lPt)  # reset startPt and leftVec normally
+                    funnVec.start = funnVec.lPt
+                    funnVec.updateLeft(leftPts[lInd])
+                    #lPoint = leftPts[lInd]
+                    #lInd += 1
+                elif leftCrossed:
+                    print "leftCrossed append", funnVec.rPt
+                    lInd = l
+                    funnVec.updateLeft(leftPts[lInd])
                     pathPts.append(funnVec.rPt)
                     funnVec.start = funnVec.rPt
                     funnVec.updateRight(rightPts[rInd])
-                    rInd += 1
-
-
-            print "funVecs2", funnVec
-            print "PATH", pathPts
+                    #rPoint = rightPts[rInd]
+                    #rInd += 1
+                print "updated", funnVec
 
         if rInd + 1 < len(rightPts):
             rInd += 1
         if lInd + 1 < len(leftPts):
             lInd += 1
         print "\n\n\nlast stab"
-        if funnVec.right.cross(rPoint - funnVec.start).z >= 0:
-            print " right good"
-            # update if we didn't cross the left. If we did cross the left, restart the funnel
+        print "###############################end funVecs1\n", funnVec
+        print "PATH", pathPts
+        if rPoint == goalPt:
+            print " rightVec = goal"
+            # update if we didn't cross the leftVec. If we did cross the leftVec, restart the funnel
             if isDistSmall(funnVec.rPt, rPoint) or funnVec.left.cross(rPoint - funnVec.start).z <= 0:
-                print " right still good", rPoint
+                print " rightVec still good", rPoint
+                pathPts.append(rPoint)  # append the goal
                 return pathPts
-            else:  # we've crossed the left side. Restart the funnel
-                # the left side is a corner
-                print "right not good"
+            else:  # we've crossed the leftVec side. add leftVec
+                # the leftVec side is a corner
+                print "rightVec not good"
                 pathPts.append(funnVec.lPt)
                 pathPts.append(goalPt)
                 return pathPts
-        else:
-            pathPts.append(funnVec.rPt)
-            pathPts.append(goalPt)
+        else:  # leftVec == goal
+            if isDistSmall(funnVec.rPt, lPoint) or funnVec.right.cross(lPoint - funnVec.start).z >= 0:
+                print " leftVec = goal", lPoint
+                pathPts.append(lPoint)  # append the goal
+                return pathPts
+            else:  # we've crossed the leftVec side. add leftVec
+                # the rightVec side is a corner
+                print "leftVec not good"
+                pathPts.append(funnVec.rPt)
+                pathPts.append(lPoint)
+                return pathPts
 
-        print "end funVecs1", funnVec
-
-        # if funnVec.left.cross(lPoint - funnVec.start).z <= 0:
-        #     print " left good"
-        #     # update if we didn't cross the right. If we did cross the right, restart the funnel
-        #     if isDistSmall(funnVec.lPt, lPoint) or funnVec.right.cross(lPoint - funnVec.start).z >= 0:
-        #         print " left still good", lPoint
+        # if funnVec.leftVec.cross(lPoint - funnVec.startPt).z <= 0:
+        #     print " leftVec good"
+        #     # update if we didn't cross the rightVec. If we did cross the rightVec, restart the funnel
+        #     if isDistSmall(funnVec.lPt, lPoint) or funnVec.rightVec.cross(lPoint - funnVec.startPt).z >= 0:
+        #         print " leftVec still good", lPoint
         #         pass
-        #     else:  # we've crossed the right side. Restart the funnel
-        #         # the right side is a corner
-        #         print " left not good"
+        #     else:  # we've crossed the rightVec side. Restart the funnel
+        #         # the rightVec side is a corner
+        #         print " leftVec not good"
         #         pathPts.append(funnVec.rPt)
         #
         # print "end funVecs2", funnVec
-
-        print "PATH", pathPts
 
 
     def funnelNew(self, channel):
@@ -317,7 +377,7 @@ class TriangulationAStar(object):
             cY = a.y - b.y
             return math.sqrt(cX*cX + cY*cY) < tol
 
-        # pick the starting point and the starting left and right
+        # pick the starting point and the starting leftVec and rightVec
         start = channel[0]
         second = channel[1]
         funVecs = self.makeFunVecs(start, second)
@@ -328,29 +388,29 @@ class TriangulationAStar(object):
         while i < len(channel) - 1:
 
             side, vecToNxt, nxtPt = self.getNextVec(i, channel)
-            if side == "left":
-                # if the point is outside on the left hold, else the next point is to the right of the left side
-                #if funVecs.right.cross(vecToNxt).z >= 0:
+            if side == "leftVec":
+                # if the point is outside on the leftVec hold, else the next point is to the rightVec of the leftVec side
+                #if funVecs.rightVec.cross(vecToNxt).z >= 0:
                 if funVecs.left.cross(vecToNxt).z <= 0:  # 1 don't update if the next vert is outside the funnel
-                    print "left good"
-                    # if the next point is to the left of the right side
-                    # it's still inside the funnel, update the left vector
-                    #if isDistSmall(funVecs.start, nxtPt) or funVecs.left.cross(vecToNxt).z <= 0:
+                    print "leftVec good"
+                    # if the next point is to the leftVec of the rightVec side
+                    # it's still inside the funnel, update the leftVec vector
+                    #if isDistSmall(funVecs.startPt, nxtPt) or funVecs.leftVec.cross(vecToNxt).z <= 0:
                     if isDistSmall(funVecs.start, nxtPt) or funVecs.right.cross(vecToNxt).z >= 0:  # 2
-                        print "left still good"
+                        print "leftVec still good"
                         funVecs.updateLeft(nxtPt)
-                    else:  # if we've crossed the right we need a new point for start (apex)
+                    else:  # if we've crossed the rightVec we need a new point for startPt (apex)
                         print "fail cross R", funVecs.right.cross(vecToNxt), " L ", funVecs.left.cross(vecToNxt).z
-                        # set the right point as the new start
+                        # set the rightVec point as the new startPt
                         funVecs.start = funVecs.rPt
                         pathPts.append(funVecs.rPt)
-                        # set the right vec to point to the right point in this triangle and the left to the left
+                        # set the rightVec vec to point to the rightVec point in this triangle and the leftVec to the leftVec
                         sharedPts = channel[i].getSharedPoints(channel[i + 1])
                         print "append***** rPt", funVecs.rPt, "shared", sharedPts, "\ni", channel[i], "\ni+1", channel[i + 1]
                         midPt = getCenterOfPoint3s(sharedPts)
                         midVec = midPt - funVecs.start
-                        # if mid cross the fist point is poss then the first pt is on the left
-                        # if midVec.cross(sharedPts[0] - funVecs.start).z >= 0:
+                        # if mid cross the fist point is poss then the first pt is on the leftVec
+                        # if midVec.cross(sharedPts[0] - funVecs.startPt).z >= 0:
                         if getLeftPt(funVecs.start, sharedPts) == sharedPts[0]:
                             funVecs.updateLeft(sharedPts[0])
                             funVecs.updateRight(sharedPts[1])
@@ -359,28 +419,28 @@ class TriangulationAStar(object):
                             funVecs.updateRight(sharedPts[0])
 
                         #i -= 1  # restart at this triangle
-            else:  # side == "right
-                # 1 don't update if the next vert is outside the funnel on the right
-                #if funVecs.left.cross(vecToNxt).z <= 0:
+            else:  # side == "rightVec
+                # 1 don't update if the next vert is outside the funnel on the rightVec
+                #if funVecs.leftVec.cross(vecToNxt).z <= 0:
                 if funVecs.right.cross(vecToNxt).z >= 0:
-                    print "right good"
-                    # make sure it didn't cross the left side
-                    #if isDistSmall(funVecs.start, nxtPt) or funVecs.right.cross(vecToNxt).z >= 0:
+                    print "rightVec good"
+                    # make sure it didn't cross the leftVec side
+                    #if isDistSmall(funVecs.startPt, nxtPt) or funVecs.rightVec.cross(vecToNxt).z >= 0:
                     if isDistSmall(funVecs.start, nxtPt) or funVecs.left.cross(vecToNxt).z <= 0:  # 2
                         funVecs.updateRight(nxtPt)
                         print "still good"#, funVecs, " LL  cross ", funVecs.getCross(), "    i ", i
-                    else:  # if we've crossed the left we need a new point for start (apex)
+                    else:  # if we've crossed the leftVec we need a new point for startPt (apex)
                         print "fail cross R", funVecs.right.cross(vecToNxt), " L ", funVecs.left.cross(vecToNxt)
-                        # do the same as above but for the left
+                        # do the same as above but for the leftVec
                         funVecs.start = funVecs.lPt
                         pathPts.append(funVecs.lPt)
-                        # set the right vec to point to the right point in this triangle and the left to the left
+                        # set the rightVec vec to point to the rightVec point in this triangle and the leftVec to the leftVec
                         sharedPts = channel[i].getSharedPoints(channel[i + 1])
                         print "append***** ", funVecs.lPt, "shared", sharedPts, "\ni", channel[i], "\ni+1", channel[i + 1]
                         midPt = getCenterOfPoint3s(sharedPts)
                         midVec = midPt - funVecs.start
-                        # if mid cross the fist point is poss then the first pt is on the left
-                        # if midVec.cross(sharedPts[0] - funVecs.start).z >= 0:
+                        # if mid cross the fist point is poss then the first pt is on the leftVec
+                        # if midVec.cross(sharedPts[0] - funVecs.startPt).z >= 0:
                         if getLeftPt(funVecs.start, sharedPts) == sharedPts[0]:
                             funVecs.updateLeft(sharedPts[0])
                             funVecs.updateRight(sharedPts[1])
@@ -400,6 +460,7 @@ class TriangulationAStar(object):
         edge = getEdgeStr(channel[i + 1], channel[i])
         # find which point in the next triangle isn't also in this triangle
         # then get it's vector and a vector to the edge's mid point so we can figure out what side the pt is on
+        print "getNextVec\n", channel[i + 1], "\n", channel[i]
         if edge == "12":  # the new point is either the 1st or second point in the triangle
             # check the other edges to get the one that leads out of i + 1
             # get the vec to it's midpoint
@@ -430,15 +491,15 @@ class TriangulationAStar(object):
             vecToNxt = channel[i + 1].tri[1] - channel[i].getCenter()
 
         if vecToNxt.cross(vecToMid).z >= 0:
-            # print "right", channel[i].selfInd, vecToMid, vecToNxt, "next",\
+            # print "rightVec", channel[i].selfInd, vecToMid, vecToNxt, "next",\
             #     channel[i].getCenter().x + vecToNxt.x, channel[i].getCenter().y + vecToNxt.y
-            return ["right", vecToNxt, Point3( channel[i].getCenter().x + vecToNxt.x,
+            return ["rightVec", vecToNxt, Point3( channel[i].getCenter().x + vecToNxt.x,
                                               channel[i].getCenter().y + vecToNxt.y,
                                               channel[i].getCenter().z + vecToNxt.z)]
         else:
-            # print "left", channel[i].selfInd, vecToMid, vecToNxt, "next",\
+            # print "leftVec", channel[i].selfInd, vecToMid, vecToNxt, "next",\
             #     channel[i].getCenter().x + vecToNxt.x, channel[i].getCenter().y + vecToNxt.y
-            return ["left", vecToNxt, Point3( channel[i].getCenter().x + vecToNxt.x,
+            return ["leftVec", vecToNxt, Point3( channel[i].getCenter().x + vecToNxt.x,
                                               channel[i].getCenter().y + vecToNxt.y,
                                               channel[i].getCenter().z + vecToNxt.z)]
 
@@ -459,22 +520,22 @@ class TriangulationAStar(object):
             shrd = channel[i].getSharedPoints(channel[i - 1])
             nxtTri = channel[i]
             print "nxtTri", nxtTri
-            if nxtTri.isConstrained(funVecs.rPt):  # comments are where the left is handled (below the right's code)
+            if nxtTri.isConstrained(funVecs.rPt):  # comments are where the leftVec is handled (below the rightVec's code)
                 for p in nxtTri.tri:
                     if p not in shrd:
                         print "r check p =", p
                         newVec = Vec3(p - funVecs.start)
                         if funVecs.right.cross(newVec).z >= 0:  # ### 1
-                            print "right good"
-                            if isDistSmall(funVecs.start, p) or funVecs.left.cross(newVec).z <= 0:  # ### 2 crossed over left
+                            print "rightVec good"
+                            if isDistSmall(funVecs.start, p) or funVecs.left.cross(newVec).z <= 0:  # ### 2 crossed over leftVec
 
                                 neitherUpdated = False
                                 funVecs.updateRight(p)
                                 # print channel[i - 1]
                                 print "still good", funVecs, " RR  cross  ", funVecs.getCross(), "    i ", i
-                            else:  # we've crossed the other side and need a new apex (start)
+                            else:  # we've crossed the other side and need a new apex (startPt)
                                 print "fail crossed L R=", funVecs.right.cross(newVec), " L ", funVecs.left.cross(newVec).z
-                                leftOrRightFailed = "right"  # if we've crossed the other side STOP
+                                leftOrRightFailed = "rightVec"  # if we've crossed the other side STOP
                                 pathPts.append(funVecs.lPt)
                                 funVecs.start = funVecs.lPt
                                 funVecs.updateRight(p)
@@ -495,16 +556,16 @@ class TriangulationAStar(object):
                         print "l check p =", p
                         newVec = Vec3(p - funVecs.start)
                         if funVecs.left.cross(newVec).z <= 0:  # 1 don't update if the next vert is outside the funnel
-                            print "left good"
+                            print "leftVec good"
                             if isDistSmall(funVecs.start, p) or funVecs.right.cross(newVec).z >= 0:  # 2
 
                                 neitherUpdated = False
                                 funVecs.updateLeft(p)
                                 # print channel[i - 1]
                                 print "still good", funVecs, " LL  cross ", funVecs.getCross(), "    i ", i
-                            else:  # if we've crossed the right we need a new point for start (apex)
+                            else:  # if we've crossed the rightVec we need a new point for startPt (apex)
                                 print "fail cross R", funVecs.right.cross(newVec), " L ", funVecs.left.cross(newVec).z
-                                leftOrRightFailed = "left"  # if we've crossed the other side STOP
+                                leftOrRightFailed = "leftVec"  # if we've crossed the other side STOP
                                 pathPts.append(funVecs.rPt)
                                 funVecs.start = funVecs.rPt
                                 funVecs.updateLeft(p)
@@ -528,10 +589,10 @@ class TriangulationAStar(object):
                     if laPt not in edgeOut:
                         oppositePt = laPt
                         newVec = oppositePt - funVecs.start
-                # right side is constrained see if it opposing pt crosses the left
+                # rightVec side is constrained see if it opposing pt crosses the leftVec
                 if nxtTri.isConstrained(funVecs.rPt):
                     print "r constrained"
-                    # we're turning right. So, we need this corner.
+                    # we're turning rightVec. So, we need this corner.
                     # They don't update whenever the constrained side is outside of the funnel
                     if not lookAheadTri.isConstrained(funVecs.lPt):
                         print "append***** r", funVecs.rPt
@@ -556,12 +617,12 @@ class TriangulationAStar(object):
 
                 # Region Used when the calling function puts in the pathPts. (not working)
                 # # if neither updated, the point that's not in the next triangle
-                # # needs to become the next apex (funVec.start).
+                # # needs to become the next apex (funVec.startPt).
                 # # we change the funVec in funnel()
                 # if funVecs.rPt not in edgeOut:
-                #     leftOrRightFailed = "right"
+                #     leftOrRightFailed = "rightVec"
                 # else:
-                #     leftOrRightFailed = "left"
+                #     leftOrRightFailed = "leftVec"
                 # break
                 # Endregion
 
@@ -583,10 +644,10 @@ class TriangulationAStar(object):
         right = Vec3(shared[1] - startPt)
         rpt = shared[1]
         # if these are on the wrong side switch them
-        # print "start", start  #, " mid - start ", getCenterOfPoint3s(shared)
+        # print "startPt", startPt  #, " mid - startPt ", getCenterOfPoint3s(shared)
         mid = getCenterOfPoint3s(shared) - startPt
-        # print "mid", mid, midP, " left - mid ", lpt-mid, shared, left
-        if left.cross(mid).z > 0.0:  #(left - mid).y >= 0.0:
+        # print "mid", mid, midP, " leftVec - mid ", lpt-mid, shared, leftVec
+        if left.cross(mid).z > 0.0:  #(leftVec - mid).y >= 0.0:
             print "swap"
             tmp = left
             left = right
@@ -607,7 +668,7 @@ class TriangulationAStar(object):
         return False
 
     def __str__(self):
-        sr = "TAStar:\nstart: " + str(self.start.selfInd) +\
+        sr = "TAStar:\nstartPt: " + str(self.start.selfInd) +\
             "\ngoal: " + str(self.goal.selfInd) +\
             "\ncurr: " + str(self.curr) +\
             "\nopen: " + str(self.open) +\

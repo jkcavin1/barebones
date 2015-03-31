@@ -116,7 +116,7 @@ def TraverserLevelFirst(startNP, funcOpOnNP, *args, **kwargs):
         # For each point:
         for p in points:
 
-            # First, we check if the point in # i.e. points is left or right or
+            # First, we check if the point in # i.e. points is leftVec or right or
             # collinear to the dividing line through points[0] and points[-1]:
             cross = (p1x-p0x)*(p[1]-p0y) - (p[0]-p0x)*(p1y-p0y)
 
@@ -148,7 +148,7 @@ def TraverserLevelFirst(startNP, funcOpOnNP, *args, **kwargs):
 
     def isLeft(qx, qy, rx, ry, px, py):
         '''Returns 2D cross product:
-            >0 for p left of the infinite line through q and r,
+            >0 for p leftVec of the infinite line through q and r,
             =0 for p on the line,
             <0 for p right of the line.
 
@@ -159,7 +159,7 @@ def TraverserLevelFirst(startNP, funcOpOnNP, *args, **kwargs):
 
     def isLeft2(q, r, p):
         '''Returns 2D cross product:
-            >0 for p left of the infinite line through q and r,
+            >0 for p leftVec of the infinite line through q and r,
             =0 for p on the line,
             <0 for p right of the line.
 
@@ -284,7 +284,7 @@ def TraverserLevelFirst(startNP, funcOpOnNP, *args, **kwargs):
             '''Simplified winding number algorithm for convex polys.
 
             If the point is within the poly then the endVertex of any edge
-            must always be to the left from the infinite line through point and
+            must always be to the leftVec from the infinite line through point and
             startVertex. If they are colinear and the point is inside of
             the AABB of the edge, the point is actually on the edge.
 

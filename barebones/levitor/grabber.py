@@ -480,7 +480,7 @@ class Grabber(object):
         elif self.currTransformOperation == self.transformOpEnum.scale:
             # 3rd and final is scaling
             mPos = base.mouseWatcherNode.getMouse()
-            # TODO: make dragging away from the object larger and to the object smaller (not simply left right up down)
+            # TODO: make dragging away from the object larger and to the object smaller (not simply leftVec right up down)
             # td The problem with this MAY come if negative, mirrored, scaling is implemented.
 
             # if operating on the z-axis, use the y (vertical screen coordinates otherwise use x (horizontal)

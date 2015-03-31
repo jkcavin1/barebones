@@ -147,7 +147,7 @@ def getLeftPt(pt, ptPair):
     midPt = getCenterOfPoint3s(ptPair)
     vecToMid = midPt - pt
     vecToPt1 = ptPair[0] - pt
-    # the point on the left has a negative z in its cross product with the middle point
+    # the point on the leftVec has a negative z in its cross product with the middle point
     if vecToPt1.cross(vecToMid).z < 0:
         return ptPair[0]
     else:

@@ -4,7 +4,7 @@ from PolygonUtils import getCenterOfPoint3s
 
 
 
-def getEdgeStr(triA, triB):
+def getSharedEdgeStr(triA, triB):
     """Returns the edge that B shares w/ A i.e. If B lies on A's 12 edge, returns '12', otherwise returns '' or '1'"""
     if triA is None or triB is None:
         return ''
@@ -43,23 +43,23 @@ class Triangle(object):
     def getTri(self):
         return tuple((self.pt1, self.pt2, self.pt3))
 
-    def getPt1(self):
+    def getPoint1(self):
         return self.tri[0]
 
-    def getPt2(self):
+    def getPoint2(self):
         return self.tri[1]
 
-    def getPt3(self):
+    def getPoint3(self):
         return self.tri[2]
 
     def getEdge12(self):
-        return tuple((self.pt1, self.pt2))
+        return [self.pt1, self.pt2]
 
     def getEdge23(self):
-        return tuple((self.pt2, self.pt3))
+        return [self.pt2, self.pt3]
 
     def getEdge13(self):
-        return tuple((self.pt1, self.pt2))
+        return [self.pt1, self.pt2]
 
     def getPoints(self):
         return [self.pt1, self.pt2, self.pt3]

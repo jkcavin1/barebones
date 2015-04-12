@@ -10,8 +10,9 @@ from BareBonesEditor import BareBonesEditor
 import math
 from PolygonUtils.AdjacencyList import AdjacencyList
 from PolygonUtils.PolygonUtils import getCenterOfPoint3s, makeTriMesh
+from PolygonUtils.PolygonUtils import getNearestPointOnLine, isPointInWedge
 from TriangulationAStar import TriangulationAStar
-from TriangulationAStar2 import TriangulationAStar2
+from TriangulationAStarR import TriangulationAStarR
 from CcwShapes import HorseShoeCentered, SquareOffCenter, SquareMap10x10, TheirMap
 
 
@@ -66,22 +67,39 @@ class Pathfinding(BareBonesEditor):
         mapNP.instanceTo(wireNP)
 
         # aStar = TriangulationAStar(aLst.adjLst, Point3(-11, -11, 0), Point3(11, 11, 0))
-        aStar = TriangulationAStar2(aLst.adjLst, aLst.adjLst[19].getCenter(), aLst.adjLst[11].getCenter())
+        aStar = TriangulationAStarR(aLst.adjLst, aLst.adjLst[23].getCenter(), aLst.adjLst[18].getCenter(), radius=.75)
         path = aStar.AStar()
         # https://www.panda3d.org/manual/index.php?title=Putting_your_new_geometry_in_the_scene_graph&diff=prev&oldid=6303
         linesegs = LineSegs("lines")
         linesegs.setColor(0, 0, 1, 1)
-        linesegs.setThickness(10)
+        linesegs.setThickness(5)
         for p in path:
             linesegs.drawTo(p)
         node = linesegs.create(False)
         nodePath = render.attachNewNode(node)
-        nodePath.setZ(.5)
+        nodePath.setZ(.15)
 
 
-
-
-
+        # tests
+        # pt = Point3(6.01, -12.0, 0)
+        # p1 = Point3(3, -12, 0)
+        # p2 = Point3(3, -6, 0)
+        # p3 = Point3(6, -12, 0)
+        # print isPointInWedge(pt, [p1, p2], [p1, p3])
+        # nearest point on line test
+        # line = [p1, p2]
+        # nearest = getNearestPointOnLine(pt, line, True)
+        # linesegs2 = LineSegs("lines2")
+        # linesegs2.setColor(0, 1, 1, 1)
+        # linesegs2.setThickness(5)
+        # linesegs2.drawTo(p1)
+        # linesegs2.drawTo(nearest)
+        # linesegs2.setThickness(2)
+        # linesegs2.drawTo(p2)
+        # node2 = linesegs2.create(False)
+        # nodePath = render.attachNewNode(node2)
+        # nodePath.setZ(.25)
+        # print nearest
 
 
 

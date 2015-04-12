@@ -4,7 +4,7 @@ __author__ = 'Lab Hatter'
 from panda3d.core import Point3
 from math import sqrt, pow
 from PolygonUtils import getDistance
-from Triangle import Triangle, getEdgeStr, getCenterOfPoint3s
+from Triangle import Triangle, getSharedEdgeStr, getCenterOfPoint3s
 
 
 def copyAdjLstElement(adjLstEl):
@@ -24,9 +24,12 @@ class AdjLstElement(Triangle):
             Triangle.__init__(self, triOrPts[0], triOrPts[1], triOrPts[2])
 
         self.selfInd = slfInd
-        self.n12 = n12Ind
+        self.n12 = n12Ind  # neighbour on 12's edge
+        self.w2313 = -1  # width when crossing edges 23 & 13
         self.n23 = n23Ind
+        self.w1213 = -1
         self.n13 = n13Ind
+        self.w1223 = -1
         self.par = None
         self.g = 100000
         self.f = 100000
@@ -66,12 +69,16 @@ class AdjLstElement(Triangle):
         pts = []
         found = False
         for pt in self.tri:
+            # print "pt = ", pt
             if pt in other.tri:
                 found = True
                 pts.append(pt)
         if not found:
-            raise Exception("Wat?? %i\n%i", self.selfInd, other.selfInd)
+            sr = "getSharedPoints requires at least one point be in both triangles\nself"\
+                 + str(self) + "\nother" + str(other)
+            raise Exception(sr)
         return pts
+
 
     def isConstrained(self, pt):
         """Returns true if the point is on an edge with no neighbour"""
@@ -109,7 +116,7 @@ class AdjLstElement(Triangle):
 
 
     def __repr__(self):
-        sr = "tri: < " + str(self.getTri())  +\
+        sr = "tri: < " + str(self.getTri()) +\
              " >   < slf: " + str(self.selfInd) +\
             " n12: " + str(self.n12) +\
             " n23: " + str(self.n23) +\
@@ -139,7 +146,7 @@ class AdjacencyList(object):
         for j in range(0, len(self.adjLst)):
             for k in range(0, len(self.adjLst)):
                 if j != k:
-                    nayb = getEdgeStr(self.adjLst[j], self.adjLst[k])
+                    nayb = getSharedEdgeStr(self.adjLst[j], self.adjLst[k])
                     if nayb == '12':
                         self.adjLst[j].n12 = k
                     if nayb == '23':

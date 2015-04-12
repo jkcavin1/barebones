@@ -4,8 +4,9 @@ __author__ = 'Lab Hatter'
 import math
 from Queue import PriorityQueue
 from panda3d.core import Vec3, Point3, LineSegs
-from PolygonUtils.PolygonUtils import getDistance, getAngleXYVecs, getCenterOfPoint3s, getLeftPt
-from PolygonUtils.AdjacencyList import AdjLstElement, copyAdjLstElement, getEdgeStr
+from PolygonUtils.PolygonUtils import getDistance, getAngleXYVecs, getCenterOfPoint3s,\
+    getLeftPt, makeTriangleCcw, triangleContainsPoint
+from PolygonUtils.AdjacencyList import AdjLstElement, copyAdjLstElement, getSharedEdgeStr
 
 
 class FunVecs(object):
@@ -77,22 +78,32 @@ class FunVecs(object):
 class TriangulationAStar2(object):
     def __init__(self, adjLst, startPt, goalPt):
         self.adjLst = adjLst
-        closest = adjLst[0].selfInd
-        closestG = adjLst[0].selfInd
-        for i in adjLst:
-            dist = getDistance(startPt, i.getCenter())
-            distG = getDistance(goalPt, i.getCenter())
+        # closest = adjLst[0].selfInd
+        # closestG = adjLst[0].selfInd
+        # for i in adjLst:
+        #     dist = getDistance(startPt, i.getCenter())
+        #     distG = getDistance(goalPt, i.getCenter())
+        #
+        #     if dist < getDistance(adjLst[closest].getCenter(), startPt):
+        #         closest = i.selfInd
+        #
+        #     if distG < getDistance(adjLst[closestG].getCenter(), goalPt):
+        #         closestG = i.selfInd
 
-            if dist < getDistance(adjLst[closest].getCenter(), startPt):
-                closest = i.selfInd
+        # use vectors to determine triangles contain the startPt and the goalPt
+        for t in adjLst:
+            if triangleContainsPoint(startPt, t.tri):
+                startTri = t.selfInd
+            if triangleContainsPoint(goalPt, t.tri):
+                goalTri = t.selfInd
 
-            if distG < getDistance(adjLst[closestG].getCenter(), goalPt):
-                closestG = i.selfInd
 
-        self.start = adjLst[closest]
+        self.startPt = startPt
+        self.start = adjLst[startTri]
         self.start.g = 0
         self.start.f = 0
-        self.goal = adjLst[closestG]
+        self.goalPt = goalPt
+        self.goal = adjLst[goalTri]
         self.open = PriorityQueue()
         self.open.put(self.start, 0)
         self.closed = dict()
@@ -109,8 +120,10 @@ class TriangulationAStar2(object):
                 break
 
             for chld in n.getNaybs():
+                # get the width of the path through (chld)->(n)->(n.par)
                 sChl = str(chld)
                 h = self.adjLst[chld].getDistanceToCentersOrPoint(self.goal)
+                # TODO: handle their MAX( g1, g2, g3,...)
                 g = n.g + self.adjLst[chld].getDistanceToCentersOrPoint(n)  # self.calculateG(chld)
                 f = h + g
                 if sChl not in self.closed or f < self.closed[sChl].f:
@@ -119,8 +132,11 @@ class TriangulationAStar2(object):
                     self.closed[sChl].g = g
                     self.closed[sChl].par = n.selfInd
                     self.open.put(self.adjLst[chld], f)
-
-        path = self.makeChannel(self.goal, self.adjLst[self.goal.par])
+        # if the start and goal are not in the same triangle
+        if self.goal.par is not None:
+            path = self.makeChannel(self.goal, self.adjLst[self.goal.par])
+        else:
+            path = [self.startPt, self.goalPt]
 
         return path
 
@@ -132,14 +148,12 @@ class TriangulationAStar2(object):
     def makeChannel(self, end, nextN, start=None):
         """Takes the end of a channel of triangles and creates lists of Right and Left points that lead through the channel"""
         if start is None:
-            start = self.start  # TODO: handle and arbitrary point as the startPt
+            start = self.start
         for nayb in end.getNaybs():
             if nayb in nextN.getNaybs():
                 p = end.getSharedPoints(nextN)
                 return [end, nextN]
         print "make channel"
-        # TODO: handle an arbitrary point as the goal
-        goalPoint = end.getCenter()
         end = copyAdjLstElement(end)
         for ii in range(0, 3):
             if end.tri[ii] not in end.getSharedPoints(nextN):
@@ -158,43 +172,61 @@ class TriangulationAStar2(object):
             parKey = str(self.closed[currKey].par)
             curr = self.closed[parKey]
 
+        # TODO: handle and arbitrary point as the startPt
         # cpy is a copy of the startPt
         # make the special case triangle for the startPt
         cpyInd = str(self.start.selfInd)
         cpy = copyAdjLstElement(self.closed[cpyInd])
         channel.append(cpy)
         channel = list(reversed(channel))
-        shrdPts = channel[0].getSharedPoints(channel[1])
 
-        print channel[0], "\n", channel[1]
-        ################### PUT THIS IN A FUNCTION
+        # pick the starting point and the starting leftVec and rightVec
+        # make the starting triangle such that it's points are the starting point and the points shared with the next tri
+        shrdPts = channel[0].getSharedPoints(channel[1])
+        start = copyAdjLstElement(channel[0])  # channel[0]
+        print "after copy\n", start
+        for pp in range(0, 3):
+            if start.tri[pp] not in shrdPts:
+                print "pp not in", start.tri[pp]
+                start.tri[pp] = self.startPt
+        print "shrdPts",  shrdPts
+        print "after point change\n", start
+        print channel[1]
+        channel[0] = start
+
+        ################### THIS ISN"T USED???PUT THIS IN A FUNCTION???
+        # region I think this is unused code
         # get the starting point so we can figure out which shared point goes on the Right and which the leftVec
-        for p in range(0, 3):
-            # the point not shared between the first two triangles is the starting point
-            if channel[0].tri[p] not in shrdPts:
-                stPt = channel[0].tri[p]
-                l = getLeftPt(stPt, shrdPts)
-                # get the rightVec point
-                for z in shrdPts:
-                    if z != l:
-                        r = z
-                        break
-                break
-        leftPts = [l]
-        rightPts = [r]
-        # make the list of leftVec and rightVec points
-        for i in range(0, len(channel) - 1):
-            side, vecToNxt, nxtPt = self.getNextVec(i, channel)
-            if side == "rightVec":
-                rightPts.append(nxtPt)
-            else:
-                leftPts.append(nxtPt)
+        # for p in range(0, 3):
+        #     # the point not shared between the first two triangles is the starting point
+        #     if channel[0].tri[p] not in shrdPts:
+        #         stPt = channel[0].tri[p]
+        #         print shrdPts
+        #         l = getLeftPt(stPt, shrdPts)
+        #         # get the rightVec point
+        #         for z in shrdPts:
+        #             if z != l:
+        #                 r = z
+        #                 break
+        #         break
+        # leftPts = [l]
+        # rightPts = [r]
+        # # make the list of leftVec and rightVec points
+        # for i in range(0, len(channel) - 1):
+        #     side, vecToNxt, nxtPt = self.getNextVec(i, channel)
+        #     if side == "rightVec":
+        #         rightPts.append(nxtPt)
+        #     else:
+        #         leftPts.append(nxtPt)
+        # endregion
         ################################# PUT THE ABOVE IN A FUNCTION
-        path = self.funnelNew(channel, goalPoint)
+        # TODO: handle an arbitrary point as the goal
+        goalPoint = self.goalPt  # end.getCenter()
+        path = self.funnel(channel, goalPoint)
         # return channel
         return path
 
-    def funnelNew(self, channel, goalPt):
+    def funnel(self, channel, goalPt):
         """creates a true path out of the given funnel and returns the points and length"""
         def isDistSmall(a, b):
             tol = 0.0001*0.0001
@@ -202,7 +234,6 @@ class TriangulationAStar2(object):
             cY = a.y - b.y
             return math.sqrt(cX*cX + cY*cY) < tol
         print "\n\n\n\n"
-        # pick the starting point and the starting leftVec and rightVec
         start = channel[0]
         second = channel[1]
         funVecs = self.makeFunVecs(start, second)
@@ -360,7 +391,7 @@ class TriangulationAStar2(object):
 
     def getNextVec(self, i, channel):
         # the edge is the edge on channel[i + 1] NOT i
-        edge = getEdgeStr(channel[i + 1], channel[i])
+        edge = getSharedEdgeStr(channel[i + 1], channel[i])
         # find which point in the next triangle isn't also in this triangle
         # then get it's vector and a vector to the edge's mid point so we can figure out what side the pt is on
         # print "getNextVec\n", channel[i + 1], "\n", channel[i]

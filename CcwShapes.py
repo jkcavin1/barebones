@@ -58,13 +58,13 @@ def TheirMap():
     thrMap.append(Vec3(12.0, 12.0, 0.0))
     thrMap.append(Vec3(-12.0, 12.0, 0.0))
     tri1 = []
-    tri1.append(Vec3(-5.0, 5.0, 0.0))
+    tri1.append(Vec3(-5.0, 5.0, 0.0))  # Vec3(-3.0, -0.25, 0.0))
     tri1.append(Vec3(1.0, 3.0, 0.0))
     tri1.append(Vec3(-3.0, 9.0, 0.0))
     tri2 = []
     tri2.append(Vec3(4.0, 2.0, 0.0))
     tri2.append(Vec3(8.0, 3.0, 0.0))
-    tri2.append(Vec3(8.0, 9.0, 0.0))
+    tri2.append(Vec3(8.0, 11.0, 0.0))  # Vec3(8.0, 9.0, 0.0))
     tris = []
     tris.append(tri1)
     tris.append(tri2)

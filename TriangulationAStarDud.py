@@ -195,7 +195,7 @@ class TriangulationAStar(object):
             #         print "rPt", funnler.rPt
             #         pathPts.append(funnler.rPt)  # record the next path point
             #         # funnler.startPt = funnler.rPt
-            #         # pts = channel[i].getEdgeStr(channel[i + 1])
+            #         # pts = channel[i].getSharedEdgeStr(channel[i + 1])
             #         # print "Shared pts", pts
             #         # # pick the not equal to leftVec point on the shared edge
             #         # for k in channel[i + 1].tri:
@@ -209,7 +209,7 @@ class TriangulationAStar(object):
             #         print "lPt", funnler.lPt
             #         pathPts.append(funnler.lPt)  # record the next path point
             #         # funnler.startPt = funnler.lPt
-            #         # pts = channel[i].getEdgeStr(channel[i + 1])
+            #         # pts = channel[i].getSharedEdgeStr(channel[i + 1])
             #         # print "Shared pts", pts
             #         # for k in channel[i + 1].tri:
             #         #     if k not in pts:

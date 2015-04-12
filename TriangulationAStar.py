@@ -5,7 +5,7 @@ import math
 from Queue import PriorityQueue
 from panda3d.core import Vec3, Point3, LineSegs
 from PolygonUtils.PolygonUtils import getDistance, getAngleXYVecs, getCenterOfPoint3s, getLeftPt
-from PolygonUtils.AdjacencyList import AdjLstElement, copyAdjLstElement, getEdgeStr
+from PolygonUtils.AdjacencyList import AdjLstElement, copyAdjLstElement, getSharedEdgeStr
 
 
 class FunVecs(object):
@@ -457,7 +457,7 @@ class TriangulationAStar(object):
 
     def getNextVec(self, i, channel):
         # the edge is the edge on channel[i + 1] NOT i
-        edge = getEdgeStr(channel[i + 1], channel[i])
+        edge = getSharedEdgeStr(channel[i + 1], channel[i])
         # find which point in the next triangle isn't also in this triangle
         # then get it's vector and a vector to the edge's mid point so we can figure out what side the pt is on
         print "getNextVec\n", channel[i + 1], "\n", channel[i]

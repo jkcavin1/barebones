@@ -66,9 +66,10 @@ class Pathfinding(BareBonesEditor):
         wireNP.setRenderMode(RenderModeAttrib.MWireframe, .5, 0)
         mapNP.instanceTo(wireNP)
 
-        # aStar = TriangulationAStar(aLst.adjLst, Point3(-11, -11, 0), Point3(11, 11, 0))
-        aStar = TriangulationAStarR(aLst.adjLst, aLst.adjLst[23].getCenter(), aLst.adjLst[18].getCenter(), radius=.75)
+        # aStar = TriangulationAStar(aLst.adjLst, Point3(-11, -11, 0), Point3(11, 11, 0))aLst.adjLst[11].getCenter()
+        aStar = TriangulationAStarR(aLst.adjLst, Point3(-11, 11, 0), aLst.adjLst[17].getCenter(), radius=.55)
         path = aStar.AStar()
+        print "\n\nEND PATH\n", path
         # https://www.panda3d.org/manual/index.php?title=Putting_your_new_geometry_in_the_scene_graph&diff=prev&oldid=6303
         linesegs = LineSegs("lines")
         linesegs.setColor(0, 0, 1, 1)

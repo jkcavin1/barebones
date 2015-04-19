@@ -1,7 +1,7 @@
 __author__ = 'Lab Hatter'
 
-from panda3d.core import Vec3
-
+from panda3d.core import Vec3, Point3
+# TODO: change the CcwShapes points to points instead of vectors as they are now DUMMY!!!
 def HorseShoeCentered():
     """Returns a horseshoe shape, thus behaving like a constructor."""
     hole1 = []
@@ -43,7 +43,6 @@ def TheirMap():
     thrMap.append(Vec3(3.0, -6.0, 0.0))
 
     thrMap.append(Vec3(3.0, -12.0, 0.0))
-
     thrMap.append(Vec3(6.0, -12.0, 0.0))
     thrMap.append(Vec3(6.0, -6.0, 0.0))
     thrMap.append(Vec3(8.0, -7.0, 0.0))
@@ -60,11 +59,13 @@ def TheirMap():
     tri1 = []
     tri1.append(Vec3(-5.0, 5.0, 0.0))  # Vec3(-3.0, -0.25, 0.0))
     tri1.append(Vec3(1.0, 3.0, 0.0))
-    tri1.append(Vec3(-3.0, 9.0, 0.0))
+    tri1.append(Vec3(-3.0, 10.99, 0.0))  # Vec3(-3.0, 9.0, 0.0)
     tri2 = []
     tri2.append(Vec3(4.0, 2.0, 0.0))
     tri2.append(Vec3(8.0, 3.0, 0.0))
     tri2.append(Vec3(8.0, 11.0, 0.0))  # Vec3(8.0, 9.0, 0.0))
+    for i in range(0, 3):
+        tri2[i] = tri2[i] + Point3(1.0, 0.0, 0.0)
     tris = []
     tris.append(tri1)
     tris.append(tri2)

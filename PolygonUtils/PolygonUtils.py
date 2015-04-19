@@ -205,6 +205,7 @@ def getNearestPointOnLine( pt, line, asLineSeg=False):
     proj = scaleVec3((lineVec[0] * vecToPt[0] + lineVec[1] * vecToPt[1]) / (lineVec[0]**2 + lineVec[1]**2), lineVec)
     ptOnLine = Point3(proj + line[0])
     # if we want to constrain it to the line segment, set the nearest pt to the closest end of the line
+    # unless it's already within the segment
     if asLineSeg:
         # TODO: make getNearestPointOnLine()'s line segment feature work in 3D, if possible
         lengthOfLine = getDistance(line[0], line[1])

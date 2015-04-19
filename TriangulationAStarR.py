@@ -2,7 +2,7 @@ __author__ = 'Lab Hatter'
 
 
 import math
-from Queue import PriorityQueue
+import heapq
 from panda3d.core import Vec3, Point3, LineSegs
 from PolygonUtils.PolygonUtils import getDistance, getAngleXYVecs, getCenterOfPoint3s, getNearestPointOnLine,\
     getLeftPt, makeTriangleCcw, triangleContainsPoint, getDistToLine, isPointInWedge
@@ -90,8 +90,8 @@ class TriangulationAStarR(object):
         self.start.f = 0
         self.goalPt = goalPt
         self.goal = adjLst[goalTri]
-        self.open = PriorityQueue()
-        self.open.put(self.start, 0)
+        self.open = []
+        heapq.heappush(self.open, (0, self.start))
         self.closed = dict()
         self.closed[str(self.start.selfInd)] = self.start
         self.curr = self.start
@@ -100,189 +100,265 @@ class TriangulationAStarR(object):
         self.radius = radius
 
     def AStar(self):
-        print "start AStar"
+        print "start AStar start: ", self.start.selfInd, " startPt ", self.startPt,\
+            " goal: ", self.goal.selfInd, " goalPt ", self.goalPt
         bestPath = path = []
         bestPathCost = 100000
         if self.start == self.goal:
             return [self.startPt, self.goalPt]
 
-        while not self.open.empty():
-            n = self.open.get()
-
+        while self.open != []:
+            n = heapq.heappop(self.open)[1]
+            print "tri ind " + str(n.selfInd), " f: ", n.f
             isFirst = True
             bestF = 100000
             bestInd = -1
             # resolve ties in favor of best path
-            print "tri ind: ", n.selfInd
-            for chld in n.getNaybs():
-                # TODO: do not parent to a path that isn't wide enough for the radius
-                if str(chld) in self.closed:
-                    print str(chld) + " is in closed. Width: ", self.getWidthThrough(n, self.closed[str(chld)])
-                    if isFirst and self.getWidthThrough(n, self.closed[str(chld)]) > 2*self.radius:
+            for chldInd in n.getNaybs():
+                if str(chldInd) in self.closed and n.selfInd != self.closed[str(chldInd)].par:
+                    w = self.getWidthThrough(n, self.closed[str(chldInd)])
+                    print "ind " + str(chldInd) + " is in closed." + " Width: " + str(w)
+                    if isFirst and self.getWidthThrough(n, self.closed[str(chldInd)]) > 2*self.radius:
                         print "first and width good"
-                        bestF = self.closed[str(chld)].f
-                        bestInd = self.closed[str(chld)].selfInd
+                        bestF = self.closed[str(chldInd)].f
+                        bestInd = self.closed[str(chldInd)].selfInd
                         isFirst = False
-                    elif self.closed[str(chld)].f < bestF\
-                            and self.getWidthThrough(n, self.closed[str(chld)]) > 2*self.radius:
+                    elif self.closed[str(chldInd)].f < bestF\
+                            and self.getWidthThrough(n, self.closed[str(chldInd)]) > 2*self.radius:
                         print "better f and width good"
-                        bestF = self.closed[str(chld)].f
-                        bestInd = self.closed[str(chld)].selfInd
+                        bestF = self.closed[str(chldInd)].f
+                        bestInd = self.closed[str(chldInd)].selfInd
 
             if bestInd != -1:  # we found a legal parent
+                print "parented to ", bestInd
                 n.par = bestInd
 
+            if n.f > bestPathCost:
+                print "ind " + str(n.selfInd), " n.f ", n.f, " bestPathCost ", bestPathCost
+                break
+
             # once the nodes we're getting from open are costlier than our path, we've found the best path
-            # if n == self.goal:  # and self.goal.par is not None:  # commented code is a reminder in case of another "bug"
-            #     print "################       FOUND GOAL       ####################"
-            #     path = self.makeChannel(self.goal, self.closed[str(self.goal.par)])
-            #     cost = 0
-            #     for c in range(0, len(path) - 1):
-            #         cost += getDistance(path[c], path[c + 1])
-            #
-            #     if bestPathCost == -1:  # this is the first path
-            #         bestPath = path
-            #         bestPathCost = cost
-            #     elif cost < bestPathCost:
-            #         bestPath = path
-            #         bestPathCost = cost
-            #
-            #     if n == self.goal and n.f > bestPathCost:
-            #         print n.selfInd, " n.f ", n.f, " bestPathCost ", bestPathCost
-            #         break
+            if n == self.goal:# and self.goal.par is not None:  # commented code is a reminder in case of another "bug"
+                print "################       FOUND GOAL       ####################"
+                path = self.makeChannel(self.goal, self.closed[str(self.goal.par)])
+                cost = 0
+                for c in range(0, len(path) - 1):
+                    cost += getDistance(path[c], path[c + 1])
+
+                if bestPathCost == -1:  # this is the first path
+                    bestPath = path
+                    bestPathCost = cost
+                elif cost < bestPathCost:
+                    bestPath = path
+                    bestPathCost = cost
             # put n in closed
             self.closed[str(n.selfInd)] = n
             # terminate algorithm
-            if n == self.goal:
-                break
+            # if n == self.goal:
+            #     break
 
-            for chld in n.getNaybs():
-                sChl = str(chld)
+            for chldInd in n.getNaybs():
+                sChl = str(chldInd)
                 # print "child ", sChl, "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
                 # get the width of the path through each side
-                if self.adjLst[chld].n12 is None:
-                    w12 = getDistToLine(self.adjLst[chld].tri[2], self.adjLst[chld].tri[0], self.adjLst[chld].tri[1])
+                if self.adjLst[chldInd].n12 is None:
+                    w12 = getDistToLine(self.adjLst[chldInd].tri[2], self.adjLst[chldInd].tri[0], self.adjLst[chldInd].tri[1])
                 else:
-                    w12 = self.getWidthAcrossEdges(self.adjLst[chld],
-                                                        [self.adjLst[chld].tri[1], self.adjLst[chld].tri[2]],
-                                                          [self.adjLst[chld].tri[0], self.adjLst[chld].tri[2]])
+                    w12 = self.getWidthAcrossEdges(self.adjLst[chldInd],
+                                                        [self.adjLst[chldInd].tri[1], self.adjLst[chldInd].tri[2]],
+                                                          [self.adjLst[chldInd].tri[0], self.adjLst[chldInd].tri[2]])
                 # print " w2313: ", w2313, "<<<<<<<<<<<<<<<<<<<<<<<<<<"
-                if self.adjLst[chld].n23 is None:
-                    w23 = getDistToLine(self.adjLst[chld].tri[0], self.adjLst[chld].tri[1], self.adjLst[chld].tri[2])
+                if self.adjLst[chldInd].n23 is None:
+                    w23 = getDistToLine(self.adjLst[chldInd].tri[0], self.adjLst[chldInd].tri[1], self.adjLst[chldInd].tri[2])
                 else:
-                    w23 = self.getWidthAcrossEdges(self.adjLst[chld],
-                                                        [self.adjLst[chld].tri[0], self.adjLst[chld].tri[1]],
-                                                          [self.adjLst[chld].tri[0], self.adjLst[chld].tri[2]])
+                    w23 = self.getWidthAcrossEdges(self.adjLst[chldInd],
+                                                        [self.adjLst[chldInd].tri[0], self.adjLst[chldInd].tri[1]],
+                                                          [self.adjLst[chldInd].tri[0], self.adjLst[chldInd].tri[2]])
                 # print "w2313: ", w2313, " w1213: ", w1213, "<<<<<<<<<<<<<<<<<<<<<<<<<<"
-                if self.adjLst[chld].n13 is None:
-                    w13 = getDistToLine(self.adjLst[chld].tri[1], self.adjLst[chld].tri[0], self.adjLst[chld].tri[2])
+                if self.adjLst[chldInd].n13 is None:
+                    w13 = getDistToLine(self.adjLst[chldInd].tri[1], self.adjLst[chldInd].tri[0], self.adjLst[chldInd].tri[2])
                 else:
-                    w13 = self.getWidthAcrossEdges(self.adjLst[chld],
-                                                        [self.adjLst[chld].tri[0], self.adjLst[chld].tri[1]],
-                                                          [self.adjLst[chld].tri[1], self.adjLst[chld].tri[2]])
-                # if there are two unconstrained edges, then there's only one way through the triangle.
-                # The width calculation misses the true width. So, this *SHOULD* fix it.
-                constrainedEdges = 0
-                if self.adjLst[chld].n12 is None:
-                    constrainedEdges += 1
-                if self.adjLst[chld].n23 is None:
-                    constrainedEdges += 1
-                if self.adjLst[chld].n13 is None:
-                    constrainedEdges += 1
+                    w13 = self.getWidthAcrossEdges(self.adjLst[chldInd],
+                                                        [self.adjLst[chldInd].tri[0], self.adjLst[chldInd].tri[1]],
+                                                          [self.adjLst[chldInd].tri[1], self.adjLst[chldInd].tri[2]])
+                # region Tampering with the width base on the degree of the triangle
+                # # if there are two unconstrained edges, then there's only one way through the triangle.
+                # # The width calculation misses the true width. So, this *SHOULD* fix it.
+                # constrainedEdges = 0
+                # if self.adjLst[chldInd].n12 is None:
+                #     constrainedEdges += 1
+                # if self.adjLst[chldInd].n23 is None:
+                #     constrainedEdges += 1
+                # if self.adjLst[chldInd].n13 is None:
+                #     constrainedEdges += 1
+                #
+                # if constrainedEdges == 1:
+                #     w12 = w23 = w13 = min(w12, w23, w13)
+                # elif constrainedEdges == 2:
+                #     # if the triangle has only one unconstrained side, that side is the only width that can be crossed
+                #     chl = self.adjLst[chldInd]
+                #     if chl.n12 is not None:
+                #         wOfUnconstrained = getDistance(chl.getPoint1(), chl.getPoint2())
+                #     elif chl.n23 is not None:
+                #         wOfUnconstrained = getDistance(chl.getPoint2(), chl.getPoint3())
+                #     else:
+                #         wOfUnconstrained = getDistance(chl.getPoint1(), chl.getPoint3())
+                #
+                #     w12 = w23 = w13 = wOfUnconstrained
+                # endregion
 
-                if constrainedEdges == 1:
-                    w12 = w23 = w13 = min(w12, w23, w13)
-                elif constrainedEdges == 2:
-                    # if the triangle has only one unconstrained side, that side is the only width that can be crossed
-                    chl = self.adjLst[chld]
-                    if chl.n12 is not None:
-                        wOfUnconstrained = getDistance(chl.getPoint1(), chl.getPoint2())
-                    elif chl.n23 is not None:
-                        wOfUnconstrained = getDistance(chl.getPoint2(), chl.getPoint3())
-                    else:
-                        wOfUnconstrained = getDistance(chl.getPoint1(), chl.getPoint3())
+                print "n ind", n.selfInd, "chl ind " + sChl + " nw12: ", w12, " w1213: ", w23, " w1223: ", w13, "<<<<<<<<<<<<<<<<<<<<<<<<<<"
 
-                    w12 = w23 = w13 = wOfUnconstrained
-
-                print sChl + " nw12: ", w12, " w1213: ", w23, " w1223: ", w13, "<<<<<<<<<<<<<<<<<<<<<<<<<<"
-
-                closeToGDist = getDistance(self.adjLst[chld].tri[0], self.goalPt)
-                closeToSDist = getDistance(self.adjLst[chld].tri[0], self.startPt)
-                for p in self.adjLst[chld].tri:
-                    if closeToGDist > getDistance(p, self.goalPt):
-                        closeToGDist = getDistance(p, self.goalPt)
-
-                    if closeToSDist > getDistance(p, self.startPt):
-                        closeToSDist = getDistance(p, self.startPt)
-
-                # !!!!g and h (consequently f) are not optimal but they're admissible
-                h = self.adjLst[chld].getDistanceToCentersOrPoint(self.goal)
-                # h = closeToGDist
+                nrToG = self.getNearestTrianglePtTo(self.adjLst[chldInd])
+                h = getDistance(self.goalPt, nrToG)
                 # TODO: handle their MAX( g1, g2, g3,...) or leave it to my shortened version
-                g = self.adjLst[chld].getDistanceToCentersOrPoint(self.startPt)#n)  # self.calculateG(chld)
-                # g = closeToSDist - n.g
+                g = self.calculateG(chldInd, h, n)
                 f = h + g
                 print "g: ", g, " h: ", h
                 if sChl not in self.closed:# or f < self.closed[sChl].f:
+                    if self.getWidthThrough(self.adjLst[chldInd], n) <= 2*self.radius:
+                        print "ignore child width <= r width ", self.getWidthThrough(self.adjLst[chldInd], n),\
+                                " from ", self.adjLst[chldInd].selfInd, " to ", n.selfInd
+                        continue
                     # print "put in closed and open"
-                    # self.closed[sChl] = self.adjLst[chld]
-                    # self.adjLst[chld].par = n.selfInd  # double parenting!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                    self.adjLst[chld].f = f
-                    self.adjLst[chld].g = g
+                    # self.closed[sChl] = self.adjLst[chldInd]
+                    # self.adjLst[chldInd].par = n.selfInd  # double parenting!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                    self.adjLst[chldInd].f = f
+                    self.adjLst[chldInd].g = g
                     # 12 is the edge that was searched across. 2313 are the edges being traveled over by the seeker.
-                    self.adjLst[chld].w2313 = w12
-                    self.adjLst[chld].w1213 = w23
-                    self.adjLst[chld].w1223 = w13
-                    print sChl + " child width = ", str(self.getWidthThrough(self.adjLst[chld], n))
-                    if self.getWidthThrough(self.adjLst[chld], n) > 2*self.radius:
-                        print "put in open"
-                        self.open.put(self.adjLst[chld], f)
-                if sChl in self.closed and f < self.closed[sChl].f and self.getWidthThrough(self.closed[sChl], n) > 2*self.radius:
-                    self.closed[sChl] = self.adjLst[chld]
+                    self.adjLst[chldInd].w2313 = w12
+                    self.adjLst[chldInd].w1213 = w23
+                    self.adjLst[chldInd].w1223 = w13
+                    w = str(self.getWidthThrough(self.adjLst[chldInd], n))
+                    print "ind " + sChl + " child width = ", w
+                    print "put in open j = ", f
+                    heapq.heappush(self.open, (f, self.adjLst[chldInd]))
+                elif sChl in self.closed and f < self.closed[sChl].f:# or chldInd == self.goal.selfInd:    ## and self.getWidthThrough(self.closed[sChl], n) > 2*self.radius:
+                    print "ind " + sChl + " in closed w/ better f. bestPathCost ", bestPathCost, " chldInd.f ", f
+                    self.closed[sChl] = self.adjLst[chldInd]
                     self.closed[sChl].f = f
                     self.closed[sChl].g = g
-                    self.closed[sChl].w2313 = w12
-                    self.closed[sChl].w1213 = w23
-                    self.closed[sChl].w1223 = w13
-                    self.open.put(self.closed[sChl], f)
+                    # self.closed[sChl].w2313 = w12
+                    # self.closed[sChl].w1213 = w23
+                    # self.closed[sChl].w1223 = w13
+                    heapq.heappush(self.open, (f, self.adjLst[chldInd]))
 
-                # print "end child ", self.adjLst[chld]
+                # print "end child ", self.adjLst[chldInd]
 
-            print "end loop #####################################################################"
+            print "end AStar loop #####################################################################\n\n"
 
-        print "open empty? ", self.open.empty(), " count ", self.open.qsize(), " best path? ", bestPathCost, " f ", n.f
+        print "best path? ", bestPathCost, " f ", n.f
+        for i in range(0, len(self.open)):
+            opn = self.open[i][1]
+            print "open ind", opn.selfInd, "f", opn.f
         # if the start and goal are not in the same triangle
         # if self.goal.par is not None:
-        # return bestPath
-        return self.makeChannel(self.goal, self.closed[str(self.goal.par)])
+        return bestPath
+        # return self.makeChannel(self.goal, self.closed[str(self.goal.par)])
         # else:
         #     return [self.startPt, self.goalPt]
+    def getNearestTrianglePtTo(self, tri, target='goal'):
+        """Gets the nearest point on the triangle to the target triangle."""
+        if target == 'goal':
+            # print "get nearest to goal"
+            target = self.goalPt
+        elif target == 'start':
+            # print "get nearest to start"
+            target = self.startPt
 
-    def calculateG(self, chld, n):
+        clst12 = getNearestPointOnLine(target, [tri.tri[0], tri.tri[1]], asLineSeg=True)
+        clst23 = getNearestPointOnLine(target, [tri.tri[1], tri.tri[2]], asLineSeg=True)
+        clst13 = getNearestPointOnLine(target, [tri.tri[0], tri.tri[2]], asLineSeg=True)
+        minDist = getDistance(target, clst12)
+        clstPt = clst12
+        # print "getNearestPt\n12 ", clst12, " 23 ", clst23, " 13 ", clst13
+        if minDist > getDistance(target, clst23):
+            minDist = getDistance(target, clst23)
+            clstPt = clst23
 
-        print ("calculateG not implemented")
+        if minDist > getDistance(target, clst13):
+            clstPt = clst13
+        # print "clstPt ", clstPt
+        return clstPt
+
+    def calculateG(self, chldInd, h, n):
+        child = self.adjLst[chldInd]
+        # region Calculate g using makeChannel PROBLEMATIC!!!
+        # child = copyAdjLstElement(child)
+        # # child.par = n.selfInd
+        # g = 0
+        #
+        # # swap out the  goal so that the funnel algorithm will calculate based on this temporary goal
+        # print " child goal ", child
+        # tmpG = self.goal
+        # self.goal = child
+        # tmpGPt = self.goalPt
+        # self.goalPt = self.getNearestTrianglePtTo(child, target='start')
+        #
+        # path = self.makeChannel(child, n)
+        # # just for printing
+        # pt = self.getNearestTrianglePtTo(child, target='start')
+        # print "nearest point to start ", pt, " goalPt ", self.goalPt, " tmpGPt ", tmpGPt, "\npath", path
+        # for p in range(0, len(path) - 1):
+        #     # The goal pt is the last point but we need to use a point in this triangle
+        #     g += getDistance(path[p], path[p + 1])
+        #     print "g counter ", g, " point p", path[p], " point p + 1", path[p + 1]
+        #
+        # self.goal = tmpG
+        # self.goalPt = tmpGPt
+        # return g
+        # endregion
+
+
+        # 1
+        shPts = n.getSharedPoints(child)
+        closeToSDist = getDistance(shPts[0], self.startPt)
+        if chldInd == self.start.selfInd:
+            closeToSDist = 0
+        else:
+            for p in shPts:
+                if closeToSDist > getDistance(p, self.startPt):
+                    closeToSDist = getDistance(p, self.startPt)
+        # 2
+        closeToGDist = getDistance(child.tri[0], self.goalPt)
+        for p in child.tri:
+            if closeToGDist > getDistance(p, self.goalPt):
+                closeToGDist = getDistance(p, self.goalPt)
+        startGoalH = getDistance(self.startPt, self.goalPt) - h
+
+        # 3
+        if child.par is not None:
+            parGdiffHH = self.adjLst[child.par].g + (self.adjLst[child.par].g - closeToGDist)
+        else:
+            parGdiffHH = 0
+
+
+        return max(closeToSDist, startGoalH, parGdiffHH)
 
 
     def makeChannel(self, end, nextN, start=None):
         """Takes the end of a channel of triangles and creates lists of Right and Left points that lead through the channel"""
         if start is None:
             start = self.start
-        for nayb in end.getNaybs():
-            if nayb in nextN.getNaybs():
-                p = end.getSharedPoints(nextN)
-                return [end, nextN]
+        # Not good: if the two are naybs they may have a corner between them
+        # for nayb in end.getNaybs():
+        #     if nayb in nextN.getNaybs():
+        #         # p = end.getSharedPoints(nextN)
+        #         # return p
+        #         return [self.startPt, self.goalPt]
         # print "make channel"
         end = copyAdjLstElement(end)
         for ii in range(0, 3):
             if end.tri[ii] not in end.getSharedPoints(nextN):
-                end.tri[ii] = end.getCenter()  # set the center as the goal point
-        end.par = nextN.selfInd
+                end.tri[ii] = self.goalPt
+        # end.par = nextN.selfInd
         channel = [end]
 
         curr = nextN
         # make a channel out of the list of adjacency indexes
         while curr != start:
             # copy the adj triangles out so we can strip references to non-channel triangle without messing of the map
+
             cpy = copyAdjLstElement(self.closed[str(curr.selfInd)])
             channel.append(cpy)
             currKey = str(curr.selfInd)
@@ -333,7 +409,7 @@ class TriangulationAStarR(object):
         nxtL = nxtR = Point3(0)
         leftInd = rightInd = i = 0  # TOCHECK: may need to restart using leftVec and rightVec verts
         while i < len(channel) - 1:
-            # ERROR have to look at the vertices on the entry edge. Check both of them against the funnel
+            # have to look at the vertices on the entry edge. Check both of them against the funnel
             sharedPts = channel[i].getSharedPoints(channel[i + 1])
             # if mid cross the fist point is poss then the first pt is on the leftVec
             # if midVec.cross(sharedPts[0] - funVecs.startPt).z >= 0:
@@ -348,7 +424,7 @@ class TriangulationAStarR(object):
                 nxtR = sharedPts[0]
                 vecToNxtR = nxtR - funVecs.startPt
 
-            # print "NEXT TRI", channel[i], "\n", "next L", nxtL, "next R", nxtR
+            print "NEXT TRI", channel[i], "\n", "next L", nxtL, "next R", nxtR
 
             # if the point is outside on the leftVec hold, else the next point is to the rightVec of the leftVec side
             if funVecs.leftVec.cross(vecToNxtL).z <= 0:  # 1 don't update if the next vert is outside the funnel
@@ -391,6 +467,7 @@ class TriangulationAStarR(object):
                     # print "fail cross R", funVecs.rightVec.cross(vecToNxtR), " L ", funVecs.leftVec.cross(vecToNxtR)
                     # do the same as above but for the leftVec
                     funVecs.startPt = funVecs.lPt
+                    # print "append***** lPt", funVecs.rPt
                     pathPts.append(funVecs.lPt)
                     i = leftInd
                     sharedPts = channel[i].getSharedPoints(channel[i + 1])
@@ -402,6 +479,7 @@ class TriangulationAStarR(object):
                     else:  # its the other way around
                         funVecs.updateLeft(sharedPts[1])
                         funVecs.updateRight(sharedPts[0])
+            # print "############## funnel loop ###################\n###########################################"
 
             # print "funVecs2", funVecs, "   i", i
             # print "path", pathPts, "\n"
@@ -409,7 +487,7 @@ class TriangulationAStarR(object):
 
         vecToGoal = goalPt - funVecs.startPt
 
-        # print "\n\n############################################\n######################################################"
+        # print "\n\n############## funneler ###################\n######################################################"
         # print "last rightVec", funVecs.rPt, "last left", funVecs.lPt
         if funVecs.leftVec.cross(vecToGoal).z >= 0:
             # print "if goal outside left"
@@ -432,6 +510,7 @@ class TriangulationAStarR(object):
                     funVecs.updateLeft(sharedPts[1])
                 vecToGoal = goalPt - funVecs.startPt
                 if funVecs.leftVec.cross(vecToGoal).z >= 0:
+                    # print "last check append lPt", funVecs.lPt
                     pathPts.append(funVecs.lPt)
 
 
@@ -454,7 +533,7 @@ class TriangulationAStarR(object):
                     funVecs.updateRight(sharedPts[0])
                 vecToGoal = goalPt - funVecs.startPt
                 if funVecs.rightVec.cross(vecToGoal).z <= 0:
-                    # print "goal right of new rPt"
+                    # print "last check append rPt", funVecs.rPt
                     pathPts.append(funVecs.rPt)
 
         pathPts.append(goalPt)
@@ -543,14 +622,14 @@ class TriangulationAStarR(object):
             edgeOut = getSharedEdgeStr(tri2, self.adjLst[tri2.par])
         else:
             # TODO: take the least width between the two possible exit edges
-            print "parent == None"
+            # print "parent == None"
             if edgeIn == '12':
                 return getDistance(tri2.getPoint1(), tri2.getPoint2())
             elif edgeIn == '23':
                 return getDistance(tri2.getPoint2(), tri2.getPoint3())
             else:
                 return getDistance(tri2.getPoint1(), tri2.getPoint3())
-        print "parent does NOT equal None"
+        # print "parent does NOT equal None"
         # 12 always comes first. 13 always comes last. Possibilities are 12, 23, 13 mutually exclusive (not duplicates)
         crossedEdges = ''
         if edgeIn == '12':
@@ -596,12 +675,14 @@ class TriangulationAStarR(object):
             edge2 = edge1
             edge1 = tmp
 
+        # TODO make this work with edge 1, 2, & 3 and local vars nayb 1, 2, & 3 so it's not sooo much code
         if edge1 == searchTri.getEdge12() and searchTri.n12 is None:
             if edge2 == searchTri.getEdge23() and searchTri.n23 is None:
                 # Both search edges are constrained, so the width of the triangle is the width of the third edge.
                 return getDistance(searchTri.getPoint1(), searchTri.getPoint3())
 
             elif edge2 == searchTri.getEdge13() and searchTri.n13 is None:
+                # ditto
                 return getDistance(searchTri.getPoint2(), searchTri.getPoint3())
             else:
                 # the other edge is not constrained, so the initial width
@@ -630,7 +711,6 @@ class TriangulationAStarR(object):
                 # ########################### this next bit seems off
                 else:
                     minWidth = getDistance(searchTri.getPoint1(), searchTri.getPoint3())
-
         elif edge1 == searchTri.getEdge13() and searchTri.n13 is None:
 
             if edge2 == searchTri.getEdge23() and searchTri.n23 is None:

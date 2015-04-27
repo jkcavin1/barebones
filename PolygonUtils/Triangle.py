@@ -1,7 +1,6 @@
 __author__ = 'Lab Hatter'
 
-from PolygonUtils import getCenterOfPoint3s
-
+from panda3d.core import Point3
 
 
 def getSharedEdgeStr(triA, triB):
@@ -34,7 +33,19 @@ def getSharedEdgeStr(triA, triB):
 
 class Triangle(object):
     def __init__(self, pt1, pt2, pt3):
-        self.tri = [pt1, pt2, pt3]
+        self.setTri(pt1, pt2, pt3)
+
+
+    def setTri(self, pt1, pt2, pt3):
+
+        tri = [pt1, pt2, pt3]
+        rightVec = tri[1] - tri[0]
+        leftVec = tri[2] - tri[0]
+        if rightVec.cross(leftVec).z < 0:
+            tmp = tri[1]
+            tri[1] = tri[2]
+            tri[2] = tmp
+        self.tri = tri
         # print "triangle = ", self.tri
         self.pt1 = pt1
         self.pt2 = pt2
@@ -65,7 +76,29 @@ class Triangle(object):
         return [self.pt1, self.pt2, self.pt3]
 
     def getCenter(self):
-        return getCenterOfPoint3s(self.getPoints())
+        return Point3((self.pt1.x + self.pt2.x + self.pt3.x)/3,
+                      (self.pt1.y + self.pt2.y + self.pt3.y)/3,
+                      (self.pt1.z + self.pt2.z + self.pt3.z)/3)
+
+    def getSharedPoints(self, other):
+        pts = []
+        found = False
+        for pt in self.tri:
+            # print "pt = ", pt
+            if pt in other.tri:
+                found = True
+                pts.append(pt)
+        if not found:
+            sr = "getSharedPoints requires at least one point be in both triangles\nself"\
+                 + str(self) + "\nother" + str(other)
+            raise Exception(sr)
+        return pts
+
+    def getNonSharedPoint(self, other):
+        shrd = self.getSharedPoints(other)
+        for pt in self.tri:
+            if pt not in other.tri:
+                return pt
 
     # def __str__(self):
     #     return "dmflksdj;fklj"

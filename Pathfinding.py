@@ -8,8 +8,8 @@ from panda3d.core import Vec3, Vec4, Point3
 from panda3d.core import RenderModeAttrib, LineSegs
 from BareBonesEditor import BareBonesEditor
 import math
-from PolygonUtils.AdjacencyList import AdjacencyList
-from PolygonUtils.PolygonUtils import getCenterOfPoint3s, makeTriMesh
+from PolygonUtils.AdjacencyList import AdjacencyList, makeTriMesh
+from PolygonUtils.PolygonUtils import getCenterOfPoint3s
 from PolygonUtils.PolygonUtils import getNearestPointOnLine, isPointInWedge
 from TriangulationAStar import TriangulationAStar
 from TriangulationAStarR import TriangulationAStarR

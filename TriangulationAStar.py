@@ -4,7 +4,7 @@ __author__ = 'Lab Hatter'
 import math
 from Queue import PriorityQueue
 from panda3d.core import Vec3, Point3, LineSegs
-from PolygonUtils.PolygonUtils import getDistance, getAngleXYVecs, getCenterOfPoint3s, getLeftPt
+from PolygonUtils.PolygonUtils import getDistance, getCenterOfPoint3s, getLeftPt
 from PolygonUtils.AdjacencyList import AdjLstElement, copyAdjLstElement, getSharedEdgeStr
 
 

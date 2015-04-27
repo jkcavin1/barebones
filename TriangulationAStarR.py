@@ -4,7 +4,7 @@ __author__ = 'Lab Hatter'
 import math
 import heapq
 from panda3d.core import Vec3, Point3, LineSegs
-from PolygonUtils.PolygonUtils import getDistance, getAngleXYVecs, getCenterOfPoint3s, getNearestPointOnLine,\
+from PolygonUtils.PolygonUtils import getDistance, getCenterOfPoint3s, getNearestPointOnLine,\
     getLeftPt, makeTriangleCcw, triangleContainsPoint, getDistToLine, isPointInWedge
 from PolygonUtils.AdjacencyList import AdjLstElement, copyAdjLstElement, getSharedEdgeStr
 

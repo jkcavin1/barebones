@@ -17,7 +17,7 @@ import inspect, ntpath  ## this gives the current modules directory via inspect.
 
 ##-------------- barebones imports
 
-from barebones.commands.CommandAssign import UndoCommandOneFuncCall
+from barebones.commands.commandAssign import UndoCommandOneFuncCall
 from barebones.utilities.pandaHelperFuncs import PanditorDisableMouseFunc, PanditorEnableMouseFunc, TranslateWrtNPFunc
 import barebones.BBVariables as BBGlobalVars
 from barebones.BBConstants import COLLISIONMASKS
@@ -94,7 +94,7 @@ class Grabber(object):
         self.grabModelNP.setPythonTag('grabberRoot', grbrNodLst)
         self.grabModelNP.reparentTo(BBGlobalVars.bareBonesObj.levitorNP)
         self.grabModelNP.hide()
-        self.grabIntoBitMask = COLLISIONMASKS
+        #self.grabIntoBitMask = COLLISIONMASKS
         self.grabModelNP.setCollideMask(COLLISIONMASKS['default'])
         self.grabModelNP.setPythonTag('grabber', self)
 
@@ -126,14 +126,14 @@ class Grabber(object):
         # setup event handling with the messenger
         # URGENT remove all of this messenger code throughout Grabber, especially the camera control
         # disable the mouse when the ~ is pressed (w/o shift)
-        base.disableCamera()                                # disable camera control by the mouse
-        messenger.accept('`', self, self.enableCamera)      # enable camera control when the ~ key is pressed w/o shift
+        self.disableCamera()                            # disable camera control by the mouse
+        messenger.accept('`', self, self.enableCamera)  # enable camera control when the ~ key is pressed w/o shift
         messenger.accept('`-up', self, self.disableCamera)  # disable camera control when the ~ key is released
 
         # handle mouse selection/deselection & manipulating the scene
         messenger.accept('mouse1', self, self.handleM1, persistent=1)  # deselect in event handler
 
-        taskMgr.add( self.scaleGrabber, 'scaleGrabber')
+        taskMgr.add(self.scaleGrabber, 'scaleGrabber')
         # ////////////////////////////////////////////////////////////////////
         # comment out: good for debug info
         #taskMgr.add(self.watchMouseColl, name='grabberDebug')
@@ -152,9 +152,8 @@ class Grabber(object):
     def prepareForPickle(self):
         self.colTraverser = None     # Traversers are not picklable
         self.defaultBitMask = None   # BitMasks "..."
-        self.grabIntoBitMask = None  # "..."
+        # self.grabIntoBitMask = None  # "..."
         self.colHandlerQueue = None  # CollisonHandlerQueue "..."
-        # print self.grabModelNP.getName()
         self.grabModelNP.removeNode()
         self.grabModelNP = None
         taskMgr.remove('scaleGrabber')
@@ -165,7 +164,6 @@ class Grabber(object):
         if self.selected is not None:
             self.grabModelNP.setPos(render, self.selected.getPos(render))
             self.grabModelNP.show()
-            print "grabber in 'if selected>set pos' recoverFromPickle"
         print "grabber sel ", self.selected, " isHidden() ", self.grabModelNP.isHidden(), '\n'
         taskMgr.add(self.scaleGrabber, 'scaleGrabber')
 
@@ -325,7 +323,6 @@ class Grabber(object):
             xVec = Vec3(1, 0, 0)
             yVec = Vec3(0, 1, 0)
             zVec = Vec3(0, 0, 1)
-
             # TODO: ??? break this up into translate rotate and scale function to make it readable
             if -1 < ind < 3:             # rotate
                 if ind % 3 == 0:    # x
@@ -437,6 +434,7 @@ class Grabber(object):
         """ Does the actual work of manipulating objects,
             once the needed attributes have been setup by handleManipulationSetup().
         """
+
         if not self.isDragging:
             return task.done
         mPos3D = Point3(0.0)
@@ -525,6 +523,7 @@ class Grabber(object):
         self.currPlaneColNorm = planeNormVec  # set the norm for the collision plane to be used in mouse1Dragging
         self.interFrameMousePosition = mPos3D
         self.currTransformOperation = transformOp
+        self.isDragging = True
         taskMgr.add(self.handleDragging, 'mouse1Dragging')
         messenger.accept('mouse1-up', self, self.handleM1Up)
 

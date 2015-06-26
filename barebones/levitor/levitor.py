@@ -21,10 +21,10 @@ class Levitor(DirectObject.DirectObject):
         self.levitorNP = levitNP
         self.grabber = Grabber(levitNP)
 
-        # self.axis = loader.loadModel("zup-axis")
-        # self.axis.reparentTo(self.levitorNP)
-        # self.axis.setScale(1.0)
-        # self.axis.setPos(0.0)
+        self.axis = loader.loadModel("zup-axis")
+        self.axis.reparentTo(self.levitorNP)
+        self.axis.setScale(1.0)
+        self.axis.setPos(0.0)
 
 
 

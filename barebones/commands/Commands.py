@@ -1,35 +1,32 @@
 __author__ = 'Lab Hatter'
 
-# from barebones.commands.commandBase import CommandBase
+
 from commandBase import CommandBase
 
 
-class CommandFuncCall(CommandBase):
+class Command(CommandBase):
     def __init__(self, func, *args, **kwargs):
         """Operates with func via a call to func(*args, **kwargs)"""
-        super(CommandFuncCall, self).__init__()
+        super(Command, self).__init__()
         self.actingFunc = func
         self.args = args
         self.kwargs = kwargs
 
     def execute(self):
         """Executes func using the arguments supplied to the constructor."""
-        # print "args then kwargs"
-        # print self.args
-        # print self.kwargs
         self.actingFunc(*self.args, **self.kwargs)
 
 
 
-class UndoCommandOneFuncCall(CommandFuncCall):
+class CommandUndo(Command):
     def __init__(self, undoArgLst, doFunc, *doArgs, **doKwargs):
         """Command execute() executes doFunc(*doArgs, **doKwargs)
         Command undo() executes undoFunc(undoArgLst).
         - undoArgLst lists all arguments to undo execute().
           The first n or n-1 elements will be past as *undoArgLst and/or *undoArgLst[0:-1]
           When the last element is a dict it will be past as **undoArgs[-1]
-            i.e. self.actingFunc(*self.undoArgs[:-1], **self.undoArgs[-1])"""
-        super(UndoCommandOneFuncCall, self).__init__(doFunc, *doArgs, **doKwargs)
+            i.e. actingFunc(*undoArgs[:-1], **undoArgs[-1])"""
+        super(CommandUndo, self).__init__(doFunc, *doArgs, **doKwargs)
         self.undoArgs = undoArgLst
 
     def undo(self):
@@ -79,7 +76,7 @@ if __name__ == '__main__':
             print "original pos wrt dummy ", self.act.getPos(self.dummy)
             print self.act.getParent(), " << parent|||wrt render>>>", self.act.getPos(render)
             self.act.setScale(.05)
-            self.command = UndoCommandOneFuncCall([self.act.getPos()],
+            self.command = CommandUndo([self.act.getPos()],
                                                   self.act.setPos, render, Point3(-60.0, -60.0, -60.0))
             base.disableCamera()
             camera.setPos( 60.0, 60.0, 60.0)

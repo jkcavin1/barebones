@@ -2,31 +2,6 @@ __author__ = 'Lab Hatter'
 
 # from barebones.commands.commandBase import CommandBase
 from commandBase import CommandBase
-# <editor-fold desc="Command Attribute assignemnt not implemented">
-# class CommandObjAttribAssignment(CommandBase):
-#     def __init__(self, targetObj, attrib, newValue):
-#         """A command that assigns newValue to targetObj's attribute or indexed value (e.g. uses [] for assignment)"""
-#         super(CommandObjAttribAssignment, self).__init__()
-#         self.targetObj = targetObj
-#         self.value = newValue
-#         self.targetObjAttrib = attrib
-#
-#     def execute(self):
-#         """Assigns cmd.value to targetVar and retains previous value in cmd.value"""
-#         tmp = self.value
-#         raise NotImplementedError("CommandObjAttribAssignment is not correctly implemented (see comment)")
-#         # this possibly conjoins the targetObj with whatever is in the mro() call
-#         # separate these i.e. if attr in target assign elif attr in mro() assign else: raise TypeError exception
-#         try:
-#             for obj in [self.targetObj]+self.targetObj.__class__.mro():
-#                 if self.targetObjAttrib in obj.__dict__:
-#                     obj.__dict__[self.targetObjAttrib] = self.value
-#         except AttributeError:
-#             for obj in [self.targetObj]:
-#                 if self.targetObjAttrib in obj.__dict__:
-#                     obj.__dict__[self.targetObjAttrib] = self.value
-#         self.value = tmp
-# </editor-fold>
 
 
 class CommandFuncCall(CommandBase):

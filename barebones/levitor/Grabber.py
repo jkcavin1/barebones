@@ -17,7 +17,7 @@ import inspect, ntpath  ## this gives the current modules directory via inspect.
 
 ##-------------- barebones imports
 
-from barebones.commands.commandAssign import UndoCommandOneFuncCall
+from barebones.commands.Commands import CommandUndo
 from barebones.utilities.pandaHelperFuncs import PanditorDisableMouseFunc, PanditorEnableMouseFunc, TranslateWrtNPFunc
 import barebones.BBVariables as BBGlobalVars
 from barebones.BBConstants import COLLISIONMASKS
@@ -270,7 +270,7 @@ class Grabber(object):
         self.isDragging = False
         self.currTransformOperation = None  # NOTE other references have been added, but no other object references them
         # record the mouse1 operation
-        BBGlobalVars.undoHandler.record(self.selected, UndoCommandOneFuncCall([self.initialCommandTrgVal],
+        BBGlobalVars.undoHandler.record(self.selected, CommandUndo([self.initialCommandTrgVal],
                                                                     self.selected.setMat, self.selected.getMat(render)))
         messenger.ignore('mouse1-up', self)
 

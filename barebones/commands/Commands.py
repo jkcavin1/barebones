@@ -1,7 +1,7 @@
 __author__ = 'Lab Hatter'
 
 
-from commandBase import CommandBase
+from CommandBase import CommandBase
 
 
 class Command(CommandBase):

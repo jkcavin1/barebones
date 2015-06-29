@@ -1,6 +1,6 @@
 __author__ = 'Lab Hatter'
 
-from commands.undoHandler import UndoHandler
+from commands.UndoHandler import UndoHandler
 
 undoHandler = None
 currCoordSysNP = None
